@@ -7,8 +7,8 @@
 #include <string.h>
 
 #define QTDE_PERSONAGENS 11
-#define LARGURA_CARTA 250
-#define ALTURA_CARTA 300
+#define LARGURA_CARTA 150
+#define ALTURA_CARTA 200
 
 const char* CAMINHO_IMG_PERSONAGENS[11] = {
     "img/soldado.png",
@@ -18,12 +18,20 @@ const char* CAMINHO_IMG_PERSONAGENS[11] = {
     "img/soldado.png",
     "img/tanque.png",
     "img/soldado.png",
-    "img/tanque.png"
-    "img/tanque.png"
-    "img/tanque.png"
+    "img/tanque.png",
+    "img/tanque.png",
+    "img/tanque.png",
     "img/tanque.png"
     };
 
+
+typedef enum {
+    SCENE_MENU,
+    SCENE_GAME,
+    SCENE_BLABLA //nao sei um nome ainda (cena antes do jogo para escolher as cartas)
+} Scene;
+
+Scene currentScene;
 
 typedef struct
 {
@@ -52,6 +60,9 @@ typedef struct
     int tam;
     Carta *carta;
 } ListaCartas;
+
+
+//************ BLABLA SCENE *************
 
 void desenhaFundo()
 {
@@ -110,7 +121,7 @@ void criaCartasDisponiveis(Carta cartasDisponiveis[], Personagem personagens[], 
         carta.height = ALTURA_CARTA;
 
         carta.proxima = NULL;
-        carta.emJogo = false;
+        carta.emJogo = true;
 
         cartasDisponiveis[i] = carta;
     }
@@ -119,16 +130,18 @@ void criaCartasDisponiveis(Carta cartasDisponiveis[], Personagem personagens[], 
 void desenhaCarta(Carta carta)
 {
     Rectangle molde;
+    Color cartaCor = carta.emJogo ? DARKGRAY : BLACK;
+    Color personagemCor = carta.emJogo ? BLACK : WHITE;
 
     molde.x = carta.posX;
     molde.y = carta.posY;
     molde.height = carta.height;
     molde.width = carta.width;
 
-    DrawRectangleRec(molde, BLACK);
+    DrawRectangleRec(molde, cartaCor);
     DrawRectangleLinesEx(molde, 10, BROWN);
 
-    DrawTexture(carta.personagem.imgPersonagem, molde.x + 20, molde.y + 25, WHITE);
+    DrawTexture(carta.personagem.imgPersonagem, molde.x + 20, molde.y + 25, personagemCor);
 }
 
 void desenhaCartasDisponiveis(Carta cartasDisponiveis[], int qtdeCartas)
@@ -154,13 +167,13 @@ void desenhaCartasDisponiveis(Carta cartasDisponiveis[], int qtdeCartas)
         int qtdeLinhas = qtdeCartas / qtdeColunas;
         int qtde = qtdeCartas - (qtdeColunas * qtdeLinhas);
 
-        printf("Qtde Linhas Antes %d\n", qtdeLinhas);
+        //printf("Qtde Linhas Antes %d\n", qtdeLinhas);
 
         qtdeLinhas += qtdeLinhas * qtdeColunas < qtdeCartas ? 1 : 0;
 
-        printf("Qtde Cartas %d\n", qtdeCartas);
-        printf("Qtde Colunas %d\n", qtdeColunas);
-        printf("Qtde Linhas Depois %d\n", qtdeLinhas);
+        //printf("Qtde Cartas %d\n", qtdeCartas);
+       // printf("Qtde Colunas %d\n", qtdeColunas);
+        //printf("Qtde Linhas Depois %d\n", qtdeLinhas);
 
         for (int i = 0; i < qtdeLinhas; i++)
         {
@@ -171,7 +184,7 @@ void desenhaCartasDisponiveis(Carta cartasDisponiveis[], int qtdeCartas)
                 colunas = qtdeColunas;
 
 
-            printf("Qtde Colunas %d\n", colunas);
+            //printf("Qtde Colunas %d\n", colunas);
 
             for (int j = 0; j < colunas; j++)
             {
@@ -222,14 +235,55 @@ void jogo()
 
     destroiTexturasPersonagens(imagensPersonagens);
 
-    CloseWindow();
+    currentScene = SCENE_MENU;
+
+    return;
 }
 
+//************ MAIN MENU *****************
+
+
+void menu()
+{
+
+    while (GetKeyPressed() != KEY_SPACE)
+    {
+        BeginDrawing();
+            ClearBackground(DARKGREEN);
+
+
+        EndDrawing();
+
+    }
+
+    currentScene = SCENE_GAME;
+
+    return;
+}
+
+
+
+void DesenhaCena()
+{
+
+    switch (currentScene)
+    {
+    case SCENE_MENU:
+        menu();
+        break;
+    case SCENE_GAME:
+        jogo();
+        break;
+    }
+
+}
 
 int main()
 {
     // Initialization
     //--------------------------------------------------------------------------------------
+
+    currentScene = SCENE_GAME;
 
     setlocale(LC_ALL, "Portuguese");
 
@@ -242,13 +296,12 @@ int main()
     SetTargetFPS(60);
 
 
-    //do
-    //{
+    while (!WindowShouldClose())
+    {
+        DesenhaCena();
+    }
 
-        jogo();
-
-    //} while(true);
-
+    CloseWindow();
 
     return 0;
 }
