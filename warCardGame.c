@@ -6,12 +6,12 @@
 #include <conio.h>
 #include <string.h>
 
-#define QTDE_PERSONAGENS 16
+#define QTDE_TOTAL_CARTAS 16
 #define QTDE_CARTAS_EMJOGO 8
 #define LARGURA_CARTA 150
 #define ALTURA_CARTA 200
 
-const char* CAMINHO_IMG_PERSONAGENS[QTDE_PERSONAGENS] = {
+const char* CAMINHO_IMG_PERSONAGENS[QTDE_TOTAL_CARTAS] = {
     "img/soldado.png",
     "img/tanque.png",
     "img/soldado.png",
@@ -50,8 +50,10 @@ typedef struct
 typedef struct carta
 {
     Personagem *personagem;
-    float posX;
-    float posY;
+    int posX;
+    int posY;
+    int posXOrigem;
+    int posYOrigem;
     float width;
     float height;
     bool emJogo;
@@ -206,6 +208,9 @@ void criaCartasDisponiveis(Carta cartasDisponiveis[], Personagem personagens[], 
         carta.posX = xInicial + (LARGURA_CARTA + espacamento) * i;
         carta.posY = yInicial;
 
+        carta.posXOrigem = carta.posX;
+        carta.posYOrigem = carta.posY;
+
         carta.width = LARGURA_CARTA;
         carta.height = ALTURA_CARTA;
 
@@ -255,6 +260,7 @@ void desenhaCarta(Carta carta)
 
     if (carta.personagem != NULL)
     {
+
         DrawRectangleRec(molde, cartaCor);
         DrawRectangleLinesEx(molde, 10, BROWN);
 
@@ -342,18 +348,39 @@ void desenhaCartasDisponiveis(Carta cartasDisponiveis[], int qtdeCartas)
     }
 }
 
+Carta* pegaCartaDisponivelPorPosicao(Carta cartasDisponiveis[], int posX, int posY)
+{
+
+    Rectangle areaCarta;
+
+    for (int i = 0; i < QTDE_TOTAL_CARTAS; i++)
+    {
+        areaCarta = (Rectangle){cartasDisponiveis[i].posX, cartasDisponiveis[i].posY, LARGURA_CARTA, ALTURA_CARTA};
+        Vector2 ponto = {posX, posY};
+
+        if(CheckCollisionPointRec(ponto, areaCarta))
+        {
+            return &cartasDisponiveis[i];
+        }
+    }
+
+    return NULL;
+}
+
 void montarDeckCartas()
 {
 
-    Texture2D imagensPersonagens[QTDE_PERSONAGENS];
-    Personagem personagens[QTDE_PERSONAGENS];
-    Carta cartasDisponiveis[QTDE_PERSONAGENS];
+    Texture2D imagensPersonagens[QTDE_TOTAL_CARTAS];
+    Personagem personagens[QTDE_TOTAL_CARTAS];
+    Carta cartasDisponiveis[QTDE_TOTAL_CARTAS];
 
     ListaCartas cartasEscolhidas;
+    Carta *cartaEmMovimento = NULL;
 
-    carregarTexturas(imagensPersonagens, QTDE_PERSONAGENS);
-    criaPersonagens(personagens, imagensPersonagens, QTDE_PERSONAGENS);
-    criaCartasDisponiveis(cartasDisponiveis, personagens, QTDE_PERSONAGENS);
+
+    carregarTexturas(imagensPersonagens, QTDE_TOTAL_CARTAS);
+    criaPersonagens(personagens, imagensPersonagens, QTDE_TOTAL_CARTAS);
+    criaCartasDisponiveis(cartasDisponiveis, personagens, QTDE_TOTAL_CARTAS);
 
     criaListaCartasEscolhidas(&cartasEscolhidas);
 
@@ -363,8 +390,37 @@ void montarDeckCartas()
         BeginDrawing();
 
             desenhaFundo();
-            desenhaCartasDisponiveis(cartasDisponiveis, QTDE_PERSONAGENS);
+            desenhaCartasDisponiveis(cartasDisponiveis, QTDE_TOTAL_CARTAS);
             desenhaCartasEscolhidas(&cartasEscolhidas);
+
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+            {
+                if (cartaEmMovimento == NULL)
+                    cartaEmMovimento = pegaCartaDisponivelPorPosicao(cartasDisponiveis, GetMouseX(), GetMouseY());
+            }
+
+            if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
+            {
+                if (cartaEmMovimento != NULL)
+                {
+                    cartaEmMovimento->posX = cartaEmMovimento->posXOrigem;
+                    cartaEmMovimento->posY = cartaEmMovimento->posYOrigem;
+
+                    inserir_no_comeco(&cartasEscolhidas, cartaEmMovimento);
+                }
+
+                cartaEmMovimento = NULL;
+            }
+
+             if (cartaEmMovimento != NULL)
+            {
+                cartaEmMovimento->posX = GetMouseX();
+                cartaEmMovimento->posY = GetMouseY();
+
+                printf("%d ; %d\n", cartaEmMovimento->posX, cartaEmMovimento->posY);
+
+                desenhaCarta(*cartaEmMovimento);
+            }
 
         EndDrawing();
 
