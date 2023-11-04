@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1699105072 source:d:\development\github\warcardgame\warcardgame.c
+1699119796 source:d:\development\github\warcardgame\warcardgame.c
 	"raylib.h"
 	<locale.h>
 	<stdio.h>

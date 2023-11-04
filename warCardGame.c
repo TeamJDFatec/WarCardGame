@@ -6,11 +6,12 @@
 #include <conio.h>
 #include <string.h>
 
-#define QTDE_PERSONAGENS 11
+#define QTDE_PERSONAGENS 16
+#define QTDE_CARTAS_EMJOGO 8
 #define LARGURA_CARTA 150
 #define ALTURA_CARTA 200
 
-const char* CAMINHO_IMG_PERSONAGENS[11] = {
+const char* CAMINHO_IMG_PERSONAGENS[QTDE_PERSONAGENS] = {
     "img/soldado.png",
     "img/tanque.png",
     "img/soldado.png",
@@ -20,8 +21,13 @@ const char* CAMINHO_IMG_PERSONAGENS[11] = {
     "img/soldado.png",
     "img/tanque.png",
     "img/tanque.png",
+    "img/soldado.png",
     "img/tanque.png",
-    "img/tanque.png"
+    "img/soldado.png",
+    "img/tanque.png",
+    "img/soldado.png",
+    "img/tanque.png",
+    "img/soldado.png"
     };
 
 
@@ -43,7 +49,7 @@ typedef struct
 
 typedef struct carta
 {
-    Personagem personagem;
+    Personagem *personagem;
     float posX;
     float posY;
     float width;
@@ -58,9 +64,92 @@ typedef struct carta
 typedef struct
 {
     int tam;
-    Carta *carta;
+    Carta *cartaInicial;
 } ListaCartas;
 
+
+void inserir_no_comeco(ListaCartas *listaCartas, Carta *carta)
+{
+    Carta *cartaNova = malloc(sizeof(Carta));
+
+    if(cartaNova){
+
+        cartaNova->personagem = carta->personagem;
+        cartaNova->posX = carta->posX;
+        cartaNova->posY = carta->posY;
+        cartaNova->width = carta->width;
+        cartaNova->height = carta->height;
+        cartaNova->emJogo = carta->emJogo;
+
+        cartaNova->proxima = listaCartas->cartaInicial;
+        listaCartas->cartaInicial = cartaNova;
+        listaCartas->tam++;
+    }
+    else{
+        printf("Erro ao alocar memoria, inicio da lista!\n");
+    }
+}
+
+void inserir_no_fim(ListaCartas *listaCartas, Carta *carta)
+{
+    Carta *aux, *cartaNova = malloc(sizeof(Carta));
+
+    if(cartaNova){
+        cartaNova->personagem = carta->personagem;
+        cartaNova->posX = carta->posX;
+        cartaNova->posY = carta->posY;
+        cartaNova->width = carta->width;
+        cartaNova->height = carta->height;
+        cartaNova->emJogo = carta->emJogo;
+
+        cartaNova->proxima = NULL;
+
+        if(listaCartas->cartaInicial == NULL){
+            listaCartas->cartaInicial = cartaNova;
+        }
+        else{
+            aux = listaCartas->cartaInicial;
+            while(aux->proxima){
+                aux = aux->proxima;
+            }
+            aux->proxima = cartaNova;
+        }
+
+        listaCartas->tam++;
+    }
+    else{
+        printf("Erro ao alocar memoria, fim da lista!\n");
+    }
+}
+
+/*void inserir_no_meio(ListaCartas *listaCartas, Carta *carta)
+{
+    Carta *aux, *cartaNova = malloc(sizeof(Carta));
+
+    if(cartaNova){
+
+        cartaNova->personagem = carta->personagem;
+        cartaNova->posX = carta->posX;
+        cartaNova->posY = carta->posY;
+        cartaNova->width = carta->width;
+        cartaNova->height = carta->height;
+        cartaNova->emJogo = carta->emJogo;
+
+        if(listaCartas->cartaInicial == NULL){
+            cartaNova->proxima = NULL;
+            listaCartas->cartaInicial = novo;
+        }
+        else{
+            aux = listaCartas->cartaInicial;
+            while(aux->proxima && aux-> != val_anterior){
+                aux = aux->proximo;
+            }
+            novo->proximo = aux->proximo;
+            aux->proximo = novo;
+        }
+        lista->tam++;
+    }
+}*/
 
 //************ BLABLA SCENE *************
 
@@ -107,13 +196,13 @@ void criaCartasDisponiveis(Carta cartasDisponiveis[], Personagem personagens[], 
 {
 
     Carta carta;
-    float xInicial = 30, yInicial = 35;
+    float xInicial = 30, yInicial = 500;
     int espacamento = 15;
 
     for (int i = 0; i < qtdeCartas; i++)
     {
 
-        carta.personagem = personagens[i];
+        carta.personagem = &personagens[i];
         carta.posX = xInicial + (LARGURA_CARTA + espacamento) * i;
         carta.posY = yInicial;
 
@@ -121,10 +210,36 @@ void criaCartasDisponiveis(Carta cartasDisponiveis[], Personagem personagens[], 
         carta.height = ALTURA_CARTA;
 
         carta.proxima = NULL;
-        carta.emJogo = true;
+        carta.emJogo = false;
 
         cartasDisponiveis[i] = carta;
     }
+}
+
+
+void criaListaCartasEscolhidas(ListaCartas *cartasEscolhidas)
+{
+    int xInicial = 30, yInicial = 35, espacamento = 15;
+
+    cartasEscolhidas->cartaInicial = NULL;
+    cartasEscolhidas->tam = 0;
+
+    Carta *carta = malloc(sizeof(Carta));
+
+    for (int i = 0; i < QTDE_CARTAS_EMJOGO; i++)
+    {
+
+        carta->personagem = NULL;
+        carta->posX = xInicial + (LARGURA_CARTA + espacamento) * i;
+        carta->posY = yInicial;
+
+        carta->height = ALTURA_CARTA;
+        carta->width = LARGURA_CARTA;
+        carta->emJogo = false;
+
+        inserir_no_comeco(cartasEscolhidas, carta);
+    }
+
 }
 
 void desenhaCarta(Carta carta)
@@ -138,10 +253,29 @@ void desenhaCarta(Carta carta)
     molde.height = carta.height;
     molde.width = carta.width;
 
-    DrawRectangleRec(molde, cartaCor);
-    DrawRectangleLinesEx(molde, 10, BROWN);
+    if (carta.personagem != NULL)
+    {
+        DrawRectangleRec(molde, cartaCor);
+        DrawRectangleLinesEx(molde, 10, BROWN);
 
-    DrawTexture(carta.personagem.imgPersonagem, molde.x + 20, molde.y + 25, personagemCor);
+        DrawTexture(carta.personagem->imgPersonagem, molde.x + 20, molde.y + 25, personagemCor);
+    }
+    else
+    {
+        DrawRectangleLinesEx(molde, 5, BROWN);
+    }
+
+}
+
+void desenhaCartasEscolhidas(ListaCartas *cartasEscolhidas)
+{
+
+    Carta *aux = cartasEscolhidas->cartaInicial;
+
+    while(aux){
+        desenhaCarta(*aux);
+        aux = aux->proxima;
+    }
 }
 
 void desenhaCartasDisponiveis(Carta cartasDisponiveis[], int qtdeCartas)
@@ -172,7 +306,7 @@ void desenhaCartasDisponiveis(Carta cartasDisponiveis[], int qtdeCartas)
         qtdeLinhas += qtdeLinhas * qtdeColunas < qtdeCartas ? 1 : 0;
 
         //printf("Qtde Cartas %d\n", qtdeCartas);
-       // printf("Qtde Colunas %d\n", qtdeColunas);
+        //printf("Qtde Colunas %d\n", qtdeColunas);
         //printf("Qtde Linhas Depois %d\n", qtdeLinhas);
 
         for (int i = 0; i < qtdeLinhas; i++)
@@ -197,7 +331,7 @@ void desenhaCartasDisponiveis(Carta cartasDisponiveis[], int qtdeCartas)
                 if (x != -1 && i != 0)
                 {
                     carta.posX = x + (LARGURA_CARTA + espacamento) * j;
-                    carta.posY = ALTURA_CARTA + 50 * i;
+                    carta.posY += ALTURA_CARTA + 15;
                 }
 
                 desenhaCarta(carta);
@@ -208,26 +342,29 @@ void desenhaCartasDisponiveis(Carta cartasDisponiveis[], int qtdeCartas)
     }
 }
 
-void jogo()
+void montarDeckCartas()
 {
 
     Texture2D imagensPersonagens[QTDE_PERSONAGENS];
     Personagem personagens[QTDE_PERSONAGENS];
     Carta cartasDisponiveis[QTDE_PERSONAGENS];
 
+    ListaCartas cartasEscolhidas;
 
     carregarTexturas(imagensPersonagens, QTDE_PERSONAGENS);
     criaPersonagens(personagens, imagensPersonagens, QTDE_PERSONAGENS);
     criaCartasDisponiveis(cartasDisponiveis, personagens, QTDE_PERSONAGENS);
 
+    criaListaCartasEscolhidas(&cartasEscolhidas);
 
-    while (!WindowShouldClose())
+    while (GetKeyPressed() != KEY_SPACE)
     {
 
         BeginDrawing();
 
             desenhaFundo();
             desenhaCartasDisponiveis(cartasDisponiveis, QTDE_PERSONAGENS);
+            desenhaCartasEscolhidas(&cartasEscolhidas);
 
         EndDrawing();
 
@@ -262,7 +399,6 @@ void menu()
 }
 
 
-
 void DesenhaCena()
 {
 
@@ -272,7 +408,7 @@ void DesenhaCena()
         menu();
         break;
     case SCENE_GAME:
-        jogo();
+        montarDeckCartas();
         break;
     }
 
