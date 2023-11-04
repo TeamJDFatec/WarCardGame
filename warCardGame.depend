@@ -1,0 +1,10 @@
+# depslib dependency file v1.0
+1699061880 source:d:\development\github\warcardgame\warcardgame.c
+	"raylib.h"
+	<locale.h>
+	<stdio.h>
+	<stdlib.h>
+	<time.h>
+	<conio.h>
+	<string.h>
+
