@@ -31,6 +31,25 @@ const char* CAMINHO_IMG_PERSONAGENS[QTDE_TOTAL_CARTAS] = {
     };
 
 
+typedef struct
+{
+    Rectangle areaBotao;
+    Color corBotao;
+    Texture2D imgBotao;
+    bool visivel;
+} Button_Rec;
+
+typedef struct
+{
+    int centerX;
+    int centerY;
+    float raioX;
+    float raioY;
+    Color corBotao;
+    Texture2D imgBotao;
+    bool visivel;
+} Button_Ellipse;
+
 typedef enum {
     SCENE_MENU,
     SCENE_GAME,
@@ -156,6 +175,27 @@ void inserir_no_fim(ListaCartas *listaCartas, Carta *carta)
 
 //************ BLABLA SCENE *************
 
+bool isMouseOverButtonEllipse(Button_Ellipse button)
+{
+    float valor = ((GetMouseX() - button.centerX) * (GetMouseX() - button.centerX)) / (button.raioX * button.raioX) + ((GetMouseY() - button.centerY) * (GetMouseY() - button.centerY)) / (button.raioY * button.raioY);
+    return valor <= 1.0;
+}
+
+bool isMouseOverButtonRec(Button_Rec button)
+{
+    return CheckCollisionPointRec(GetMousePosition(), button.areaBotao);
+}
+
+void desenhaBotaoRec(Button_Rec botao)
+{
+    DrawRectangleRec(botao.areaBotao, botao.corBotao);
+}
+
+void desenhaBotaoEllipse(Button_Ellipse botao)
+{
+    DrawEllipse(botao.centerX, botao.centerY, botao.raioX, botao.raioY, botao.corBotao);
+}
+
 void desenhaFundo()
 {
 
@@ -248,6 +288,22 @@ void criaListaCartasEscolhidas(ListaCartas *cartasEscolhidas)
     }
 }
 
+int totalCartasEscolhidas(ListaCartas *cartasEscolhidas)
+{
+    int contador = 0;
+    Carta *aux = cartasEscolhidas->cartaInicial;
+
+    while(aux)
+    {
+        if (aux->personagem != NULL)
+            contador++;
+
+        aux = aux->proxima;
+    }
+
+    return contador;
+}
+
 void desenhaCarta(Carta carta)
 {
     Rectangle molde;
@@ -292,6 +348,10 @@ void desenhaCartasDisponiveis(Carta cartasDisponiveis[], int qtdeCartas)
     int espacamento = 15;
     int qtdeColunas = (int) GetScreenWidth() / (LARGURA_CARTA + espacamento);
 
+
+    if (qtdeColunas > 8)
+        qtdeColunas = 8;
+
     if (qtdeColunas >= qtdeCartas)
     {
 
@@ -308,24 +368,15 @@ void desenhaCartasDisponiveis(Carta cartasDisponiveis[], int qtdeCartas)
         int qtdeLinhas = qtdeCartas / qtdeColunas;
         int qtde = qtdeCartas - (qtdeColunas * qtdeLinhas);
 
-        //printf("Qtde Linhas Antes %d\n", qtdeLinhas);
-
         qtdeLinhas += qtdeLinhas * qtdeColunas < qtdeCartas ? 1 : 0;
-
-        //printf("Qtde Cartas %d\n", qtdeCartas);
-        //printf("Qtde Colunas %d\n", qtdeColunas);
-        //printf("Qtde Linhas Depois %d\n", qtdeLinhas);
 
         for (int i = 0; i < qtdeLinhas; i++)
         {
             int colunas;
-            if (i == qtdeLinhas - 1)
+            if (i == qtdeLinhas - 1 && qtde > 0)
                 colunas = qtde;
             else
                 colunas = qtdeColunas;
-
-
-            //printf("Qtde Colunas %d\n", colunas);
 
             for (int j = 0; j < colunas; j++)
             {
@@ -396,6 +447,12 @@ int indexListaCartasEscolhidasPorPosicao(ListaCartas *cartasEscolhidas, int posX
 
 }
 
+void devolverCartaParaDisponiveis(Carta cartasDisponiveis[], int id)
+{
+    if (id >= 0 && id < QTDE_TOTAL_CARTAS)
+        cartasDisponiveis[id].emJogo = false;
+}
+
 void moverCartaDisponiveisParaEscolhidas(Carta cartasDisponiveis[], ListaCartas *cartasEscolhidas, Carta *cartaEmMovimento, int indexCartasEscolhidas)
 {
 
@@ -415,12 +472,20 @@ void moverCartaDisponiveisParaEscolhidas(Carta cartasDisponiveis[], ListaCartas 
         contador ++;
     }
 
+    if (aux->id != -1)
+        devolverCartaParaDisponiveis(cartasDisponiveis, aux->id);
+
     aux->personagem = cartaEmMovimento->personagem;
     aux->id = cartaEmMovimento->id;
 }
 
 void montarDeckCartas()
 {
+
+    //Button_Rec botao_avancar;
+    bool botaoClicado = false;
+    Button_Ellipse botao_avancar;
+    botao_avancar.corBotao = DARKBROWN;
 
     Texture2D imagensPersonagens[QTDE_TOTAL_CARTAS];
     Personagem personagens[QTDE_TOTAL_CARTAS];
@@ -444,6 +509,44 @@ void montarDeckCartas()
             desenhaFundo();
             desenhaCartasDisponiveis(cartasDisponiveis, QTDE_TOTAL_CARTAS);
             desenhaCartasEscolhidas(&cartasEscolhidas);
+
+            /*
+            if (totalCartasEscolhidas(&cartasEscolhidas) >= 1)
+            {
+                botao_avancar.areaBotao = (Rectangle) {(GetScreenWidth() / 2) * 1.55, (GetScreenHeight() / 2) * 0.80, 150, 100};
+                desenhaBotaoRec(botao_avancar);
+            }
+
+            if (isMouseOverButtonRec(botao_avancar))
+                botao_avancar.corBotao = BROWN;
+            else
+                botao_avancar.corBotao = DARKBROWN;
+            */
+
+            if (totalCartasEscolhidas(&cartasEscolhidas) >= 1)
+            {
+                botao_avancar.centerX = (GetScreenWidth() / 2) * 1.55;
+                botao_avancar.centerY = (GetScreenHeight() / 2) * 0.80;
+                botao_avancar.raioX = 100;
+                botao_avancar.raioY = 50;
+                desenhaBotaoEllipse(botao_avancar);
+                DrawText("JOGAR", (botao_avancar.centerX - MeasureText("JOGAR", 30)) + 50, botao_avancar.centerY * 0.96, 30, WHITE);
+            }
+
+            if (isMouseOverButtonEllipse(botao_avancar))
+            {
+                botao_avancar.corBotao = BROWN;
+
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+                    botaoClicado = true;
+            }
+            else
+                botao_avancar.corBotao = DARKBROWN;
+
+            if (botaoClicado) {
+                currentScene = SCENE_MENU;
+                return;
+            }
 
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
             {
@@ -474,8 +577,6 @@ void montarDeckCartas()
             {
                 cartaEmMovimento->posX = GetMouseX();
                 cartaEmMovimento->posY = GetMouseY();
-
-                //printf("%d ; %d\n", cartaEmMovimento->posX, cartaEmMovimento->posY);
 
                 desenhaCarta(*cartaEmMovimento);
             }
