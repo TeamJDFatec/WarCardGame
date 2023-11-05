@@ -173,8 +173,6 @@ void inserir_no_fim(ListaCartas *listaCartas, Carta *carta)
     }
 }*/
 
-//************ BLABLA SCENE *************
-
 bool isMouseOverButtonEllipse(Button_Ellipse button)
 {
     float valor = ((GetMouseX() - button.centerX) * (GetMouseX() - button.centerX)) / (button.raioX * button.raioX) + ((GetMouseY() - button.centerY) * (GetMouseY() - button.centerY)) / (button.raioY * button.raioY);
@@ -184,6 +182,25 @@ bool isMouseOverButtonEllipse(Button_Ellipse button)
 bool isMouseOverButtonRec(Button_Rec button)
 {
     return CheckCollisionPointRec(GetMousePosition(), button.areaBotao);
+}
+
+void reposicionarListaEscolhidos(ListaCartas *cartasEscolhidas, int posXInicial, int posY)
+{
+
+    int contador = 0;
+    Carta *aux = cartasEscolhidas->cartaInicial;
+
+    while(aux)
+    {
+        aux->posX = posXInicial + (LARGURA_CARTA + 15) * contador;
+        aux->posY = posY;
+
+        aux->posXOrigem = aux->posX;
+        aux->posYOrigem = aux-posY;
+
+        aux = aux->proxima;
+        contador++;
+    }
 }
 
 void desenhaBotaoRec(Button_Rec botao)
@@ -203,6 +220,43 @@ void desenhaFundo()
 
 }
 
+void desenhaCarta(Carta carta)
+{
+    Rectangle molde;
+    Color cartaCor = carta.emJogo ? DARKGRAY : BLACK;
+    Color personagemCor = carta.emJogo ? BLACK : WHITE;
+
+    molde.x = carta.posX;
+    molde.y = carta.posY;
+    molde.height = carta.height;
+    molde.width = carta.width;
+
+    if (carta.personagem != NULL)
+    {
+
+        DrawRectangleRec(molde, cartaCor);
+        DrawRectangleLinesEx(molde, 10, BROWN);
+
+        DrawTexture(carta.personagem->imgPersonagem, molde.x + 20, molde.y + 25, personagemCor);
+    }
+    else
+    {
+        DrawRectangleLinesEx(molde, 5, BROWN);
+    }
+
+}
+
+void desenhaCartasEscolhidas(ListaCartas *cartasEscolhidas)
+{
+
+    Carta *aux = cartasEscolhidas->cartaInicial;
+
+    while(aux){
+        desenhaCarta(*aux);
+        aux = aux->proxima;
+    }
+}
+
 void carregarTexturas(Texture2D imagens[], int qtde)
 {
     for (int i = 0; i < qtde; i++)
@@ -218,6 +272,30 @@ void destroiTexturasPersonagens(Texture2D imagensPersonagens[])
         UnloadTexture(imagensPersonagens[i]);
     }
 }
+
+//************ GAME SCENE ***************
+
+void jogo(ListaCartas *cartasEscolhidas)
+{
+
+    reposicionarListaEscolhidos(cartasEscolhidas, GetScreenWidth() / 8, GetScreenHeight() - (LARGURA_CARTA * 2));
+
+    while(1)
+    {
+
+        BeginDrawing();
+
+            desenhaFundo();
+
+            desenhaCartasEscolhidas(cartasEscolhidas);
+
+        EndDrawing();
+    }
+}
+
+
+
+//************ BLABLA SCENE *************
 
 void criaPersonagens(Personagem personagens[], Texture2D imagensPersonagens[], int qtde)
 {
@@ -304,43 +382,6 @@ int totalCartasEscolhidas(ListaCartas *cartasEscolhidas)
     return contador;
 }
 
-void desenhaCarta(Carta carta)
-{
-    Rectangle molde;
-    Color cartaCor = carta.emJogo ? DARKGRAY : BLACK;
-    Color personagemCor = carta.emJogo ? BLACK : WHITE;
-
-    molde.x = carta.posX;
-    molde.y = carta.posY;
-    molde.height = carta.height;
-    molde.width = carta.width;
-
-    if (carta.personagem != NULL)
-    {
-
-        DrawRectangleRec(molde, cartaCor);
-        DrawRectangleLinesEx(molde, 10, BROWN);
-
-        DrawTexture(carta.personagem->imgPersonagem, molde.x + 20, molde.y + 25, personagemCor);
-    }
-    else
-    {
-        DrawRectangleLinesEx(molde, 5, BROWN);
-    }
-
-}
-
-void desenhaCartasEscolhidas(ListaCartas *cartasEscolhidas)
-{
-
-    Carta *aux = cartasEscolhidas->cartaInicial;
-
-    while(aux){
-        desenhaCarta(*aux);
-        aux = aux->proxima;
-    }
-}
-
 void desenhaCartasDisponiveis(Carta cartasDisponiveis[], int qtdeCartas)
 {
     Carta *carta = NULL;
@@ -384,7 +425,7 @@ void desenhaCartasDisponiveis(Carta cartasDisponiveis[], int qtdeCartas)
                 carta = &cartasDisponiveis[index];
 
                 if (i == 0 && j == 0)
-                    x = carta->posX;
+                    x = carta->posXOrigem;
 
                 if (x != -1 && i != 0)
                 {
@@ -410,13 +451,16 @@ Carta* pegaCartaDisponivelPorPosicao(Carta cartasDisponiveis[], int posX, int po
         areaCarta = (Rectangle){cartasDisponiveis[i].posX, cartasDisponiveis[i].posY, LARGURA_CARTA, ALTURA_CARTA};
         Vector2 ponto = {posX, posY};
 
-        printf("Id: %d\n", cartasDisponiveis[i].id);
-        printf("PosX: %d\n", cartasDisponiveis[i].posX);
-        printf("PosY: %d\n", cartasDisponiveis[i].posY);
+        //printf("Id: %d\n", cartasDisponiveis[i].id);
+        //printf("PosX: %d\n", cartasDisponiveis[i].posX);
+        //printf("PosY: %d\n", cartasDisponiveis[i].posY);
 
         if(CheckCollisionPointRec(ponto, areaCarta))
         {
-            return &cartasDisponiveis[i];
+            if (cartasDisponiveis[i].emJogo == false)
+                return &cartasDisponiveis[i];
+            else
+                return NULL;
         }
     }
 
@@ -479,7 +523,7 @@ void moverCartaDisponiveisParaEscolhidas(Carta cartasDisponiveis[], ListaCartas 
     aux->id = cartaEmMovimento->id;
 }
 
-void montarDeckCartas()
+void montarDeckCartas(ListaCartas *cartasEscolhidas, Carta cartasDisponiveis[])
 {
 
     //Button_Rec botao_avancar;
@@ -487,31 +531,30 @@ void montarDeckCartas()
     Button_Ellipse botao_avancar;
     botao_avancar.corBotao = DARKBROWN;
 
-    Texture2D imagensPersonagens[QTDE_TOTAL_CARTAS];
-    Personagem personagens[QTDE_TOTAL_CARTAS];
-    Carta cartasDisponiveis[QTDE_TOTAL_CARTAS];
+    //Texture2D imagensPersonagens[QTDE_TOTAL_CARTAS];
+    //Personagem personagens[QTDE_TOTAL_CARTAS];
+    //Carta cartasDisponiveis[QTDE_TOTAL_CARTAS];
 
-    ListaCartas cartasEscolhidas;
     Carta *cartaEmMovimento = NULL;
     int indexCartasEscolhidas = -1;
 
-    carregarTexturas(imagensPersonagens, QTDE_TOTAL_CARTAS);
-    criaPersonagens(personagens, imagensPersonagens, QTDE_TOTAL_CARTAS);
-    criaCartasDisponiveis(cartasDisponiveis, personagens, QTDE_TOTAL_CARTAS);
+    //carregarTexturas(imagensPersonagens, QTDE_TOTAL_CARTAS);
+    //criaPersonagens(personagens, imagensPersonagens, QTDE_TOTAL_CARTAS);
+    //criaCartasDisponiveis(cartasDisponiveis, personagens, QTDE_TOTAL_CARTAS);
 
-    criaListaCartasEscolhidas(&cartasEscolhidas);
+    criaListaCartasEscolhidas(cartasEscolhidas);
 
-    while (GetKeyPressed() != KEY_SPACE)
+    while (1)
     {
 
         BeginDrawing();
 
             desenhaFundo();
             desenhaCartasDisponiveis(cartasDisponiveis, QTDE_TOTAL_CARTAS);
-            desenhaCartasEscolhidas(&cartasEscolhidas);
+            desenhaCartasEscolhidas(cartasEscolhidas);
 
             /*
-            if (totalCartasEscolhidas(&cartasEscolhidas) >= 1)
+            if (totalCartasEscolhidas(cartasEscolhidas) >= 1)
             {
                 botao_avancar.areaBotao = (Rectangle) {(GetScreenWidth() / 2) * 1.55, (GetScreenHeight() / 2) * 0.80, 150, 100};
                 desenhaBotaoRec(botao_avancar);
@@ -523,7 +566,7 @@ void montarDeckCartas()
                 botao_avancar.corBotao = DARKBROWN;
             */
 
-            if (totalCartasEscolhidas(&cartasEscolhidas) >= 1)
+            if (totalCartasEscolhidas(cartasEscolhidas) >= QTDE_CARTAS_EMJOGO)
             {
                 botao_avancar.centerX = (GetScreenWidth() / 2) * 1.55;
                 botao_avancar.centerY = (GetScreenHeight() / 2) * 0.80;
@@ -543,10 +586,8 @@ void montarDeckCartas()
             else
                 botao_avancar.corBotao = DARKBROWN;
 
-            if (botaoClicado) {
-                currentScene = SCENE_MENU;
-                return;
-            }
+            if (botaoClicado)
+                break;
 
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
             {
@@ -558,13 +599,12 @@ void montarDeckCartas()
             {
                 if (cartaEmMovimento != NULL)
                 {
-                    indexCartasEscolhidas = indexListaCartasEscolhidasPorPosicao(&cartasEscolhidas, GetMouseX(), GetMouseY());
+                    indexCartasEscolhidas = indexListaCartasEscolhidasPorPosicao(cartasEscolhidas, GetMouseX(), GetMouseY());
 
                     printf("%d index\n", indexCartasEscolhidas);
 
                     if (indexCartasEscolhidas >= 0)
-                        moverCartaDisponiveisParaEscolhidas(cartasDisponiveis, &cartasEscolhidas, cartaEmMovimento, indexCartasEscolhidas);
-
+                        moverCartaDisponiveisParaEscolhidas(cartasDisponiveis, cartasEscolhidas, cartaEmMovimento, indexCartasEscolhidas);
 
                     cartaEmMovimento->posX = cartaEmMovimento->posXOrigem;
                     cartaEmMovimento->posY = cartaEmMovimento->posYOrigem;
@@ -575,6 +615,8 @@ void montarDeckCartas()
 
              if (cartaEmMovimento != NULL)
             {
+                printf("Id carta em movimento: %d\n", cartaEmMovimento->id);
+
                 cartaEmMovimento->posX = GetMouseX();
                 cartaEmMovimento->posY = GetMouseY();
 
@@ -585,9 +627,8 @@ void montarDeckCartas()
 
     }
 
-    destroiTexturasPersonagens(imagensPersonagens);
-
-    currentScene = SCENE_MENU;
+    //destroiTexturasPersonagens(imagensPersonagens);
+    currentScene = SCENE_GAME;
 
     return;
 }
@@ -616,14 +657,26 @@ void menu()
 
 void DesenhaCena()
 {
+    ListaCartas cartasEscolhidas;
+
+    Texture2D imagensPersonagens[QTDE_TOTAL_CARTAS];
+    Personagem personagens[QTDE_TOTAL_CARTAS];
+    Carta cartasDisponiveis[QTDE_TOTAL_CARTAS];
+
+    carregarTexturas(imagensPersonagens, QTDE_TOTAL_CARTAS);
+    criaPersonagens(personagens, imagensPersonagens, QTDE_TOTAL_CARTAS);
+    criaCartasDisponiveis(cartasDisponiveis, personagens, QTDE_TOTAL_CARTAS);
 
     switch (currentScene)
     {
     case SCENE_MENU:
         menu();
         break;
+    case SCENE_BLABLA:
+        montarDeckCartas(&cartasEscolhidas, cartasDisponiveis);
+        break;
     case SCENE_GAME:
-        montarDeckCartas();
+        jogo(&cartasEscolhidas);
         break;
     }
 
@@ -634,18 +687,14 @@ int main()
     // Initialization
     //--------------------------------------------------------------------------------------
 
-    currentScene = SCENE_GAME;
-
-    setlocale(LC_ALL, "Portuguese");
+    currentScene = SCENE_BLABLA;
 
     SetTraceLogLevel(LOG_ERROR);
-
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(1500, 800, "Preguica");
-    MaximizeWindow();
+    //SetConfigFlags(FLAG_WINDOW_);
+    InitWindow(0 , 0, "War Card Game");
+    //MaximizeWindow();
 
     SetTargetFPS(60);
-
 
     while (!WindowShouldClose())
     {
