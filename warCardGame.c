@@ -49,6 +49,7 @@ typedef struct
 
 typedef struct carta
 {
+    int id;
     Personagem *personagem;
     int posX;
     int posY;
@@ -203,7 +204,7 @@ void criaCartasDisponiveis(Carta cartasDisponiveis[], Personagem personagens[], 
 
     for (int i = 0; i < qtdeCartas; i++)
     {
-
+        carta.id = i;
         carta.personagem = &personagens[i];
         carta.posX = xInicial + (LARGURA_CARTA + espacamento) * i;
         carta.posY = yInicial;
@@ -234,6 +235,7 @@ void criaListaCartasEscolhidas(ListaCartas *cartasEscolhidas)
     for (int i = 0; i < QTDE_CARTAS_EMJOGO; i++)
     {
 
+        carta->id = -1;
         carta->personagem = NULL;
         carta->posX = xInicial + (LARGURA_CARTA + espacamento) * i;
         carta->posY = yInicial;
@@ -242,9 +244,8 @@ void criaListaCartasEscolhidas(ListaCartas *cartasEscolhidas)
         carta->width = LARGURA_CARTA;
         carta->emJogo = false;
 
-        inserir_no_comeco(cartasEscolhidas, carta);
+        inserir_no_fim(cartasEscolhidas, carta);
     }
-
 }
 
 void desenhaCarta(Carta carta)
@@ -286,7 +287,7 @@ void desenhaCartasEscolhidas(ListaCartas *cartasEscolhidas)
 
 void desenhaCartasDisponiveis(Carta cartasDisponiveis[], int qtdeCartas)
 {
-    Carta carta;
+    Carta *carta = NULL;
 
     int espacamento = 15;
     int qtdeColunas = (int) GetScreenWidth() / (LARGURA_CARTA + espacamento);
@@ -329,18 +330,18 @@ void desenhaCartasDisponiveis(Carta cartasDisponiveis[], int qtdeCartas)
             for (int j = 0; j < colunas; j++)
             {
 
-                carta = cartasDisponiveis[index];
+                carta = &cartasDisponiveis[index];
 
                 if (i == 0 && j == 0)
-                    x = carta.posX;
+                    x = carta->posX;
 
                 if (x != -1 && i != 0)
                 {
-                    carta.posX = x + (LARGURA_CARTA + espacamento) * j;
-                    carta.posY += ALTURA_CARTA + 15;
+                    carta->posX = x + (LARGURA_CARTA + espacamento) * j;
+                    carta->posY = ALTURA_CARTA + 515;
                 }
 
-                desenhaCarta(carta);
+                desenhaCarta(*carta);
 
                 index ++;
             }
@@ -358,6 +359,10 @@ Carta* pegaCartaDisponivelPorPosicao(Carta cartasDisponiveis[], int posX, int po
         areaCarta = (Rectangle){cartasDisponiveis[i].posX, cartasDisponiveis[i].posY, LARGURA_CARTA, ALTURA_CARTA};
         Vector2 ponto = {posX, posY};
 
+        printf("Id: %d\n", cartasDisponiveis[i].id);
+        printf("PosX: %d\n", cartasDisponiveis[i].posX);
+        printf("PosY: %d\n", cartasDisponiveis[i].posY);
+
         if(CheckCollisionPointRec(ponto, areaCarta))
         {
             return &cartasDisponiveis[i];
@@ -365,6 +370,53 @@ Carta* pegaCartaDisponivelPorPosicao(Carta cartasDisponiveis[], int posX, int po
     }
 
     return NULL;
+}
+
+int indexListaCartasEscolhidasPorPosicao(ListaCartas *cartasEscolhidas, int posX, int posY)
+{
+    int contador = -1;
+    Carta *aux = cartasEscolhidas->cartaInicial;
+    Rectangle areaCarta;
+
+    while (aux)
+    {
+        contador ++;
+        areaCarta = (Rectangle){aux->posX, aux->posY, LARGURA_CARTA + 15, ALTURA_CARTA + 20};
+        Vector2 ponto = {posX, posY};
+
+        if(CheckCollisionPointRec(ponto, areaCarta))
+        {
+            return contador;
+        }
+
+        aux = aux->proxima;
+    }
+
+    return -1;
+
+}
+
+void moverCartaDisponiveisParaEscolhidas(Carta cartasDisponiveis[], ListaCartas *cartasEscolhidas, Carta *cartaEmMovimento, int indexCartasEscolhidas)
+{
+
+    int contador = 0;
+    Carta *aux = cartasEscolhidas->cartaInicial;
+
+    for (int i = 0; i < QTDE_TOTAL_CARTAS; i++)
+    {
+
+        if (cartaEmMovimento->id == cartasDisponiveis[i].id)
+            cartasDisponiveis[i].emJogo = true;
+    }
+
+    while (aux && contador < indexCartasEscolhidas)
+    {
+        aux = aux->proxima;
+        contador ++;
+    }
+
+    aux->personagem = cartaEmMovimento->personagem;
+    aux->id = cartaEmMovimento->id;
 }
 
 void montarDeckCartas()
@@ -376,7 +428,7 @@ void montarDeckCartas()
 
     ListaCartas cartasEscolhidas;
     Carta *cartaEmMovimento = NULL;
-
+    int indexCartasEscolhidas = -1;
 
     carregarTexturas(imagensPersonagens, QTDE_TOTAL_CARTAS);
     criaPersonagens(personagens, imagensPersonagens, QTDE_TOTAL_CARTAS);
@@ -403,10 +455,16 @@ void montarDeckCartas()
             {
                 if (cartaEmMovimento != NULL)
                 {
+                    indexCartasEscolhidas = indexListaCartasEscolhidasPorPosicao(&cartasEscolhidas, GetMouseX(), GetMouseY());
+
+                    printf("%d index\n", indexCartasEscolhidas);
+
+                    if (indexCartasEscolhidas >= 0)
+                        moverCartaDisponiveisParaEscolhidas(cartasDisponiveis, &cartasEscolhidas, cartaEmMovimento, indexCartasEscolhidas);
+
+
                     cartaEmMovimento->posX = cartaEmMovimento->posXOrigem;
                     cartaEmMovimento->posY = cartaEmMovimento->posYOrigem;
-
-                    inserir_no_comeco(&cartasEscolhidas, cartaEmMovimento);
                 }
 
                 cartaEmMovimento = NULL;
@@ -417,7 +475,7 @@ void montarDeckCartas()
                 cartaEmMovimento->posX = GetMouseX();
                 cartaEmMovimento->posY = GetMouseY();
 
-                printf("%d ; %d\n", cartaEmMovimento->posX, cartaEmMovimento->posY);
+                //printf("%d ; %d\n", cartaEmMovimento->posX, cartaEmMovimento->posY);
 
                 desenhaCarta(*cartaEmMovimento);
             }
