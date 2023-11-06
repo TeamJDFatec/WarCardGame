@@ -196,7 +196,7 @@ void reposicionarListaEscolhidos(ListaCartas *cartasEscolhidas, int posXInicial,
         aux->posY = posY;
 
         aux->posXOrigem = aux->posX;
-        aux->posYOrigem = aux-posY;
+        aux->posYOrigem = aux->posY;
 
         aux = aux->proxima;
         contador++;
@@ -273,11 +273,34 @@ void destroiTexturasPersonagens(Texture2D imagensPersonagens[])
     }
 }
 
+Carta* cartaEscolhidasPorPosicao(ListaCartas *cartasEscolhidas, int posX, int posY)
+{
+    Carta *aux = cartasEscolhidas->cartaInicial;
+    Rectangle areaCarta;
+
+    while (aux)
+    {
+        areaCarta = (Rectangle){aux->posX, aux->posY, LARGURA_CARTA + 15, ALTURA_CARTA + 20};
+        Vector2 ponto = {posX, posY};
+
+        if(CheckCollisionPointRec(ponto, areaCarta))
+        {
+            return aux;
+        }
+
+        aux = aux->proxima;
+    }
+
+    return NULL;
+
+}
+
 //************ GAME SCENE ***************
 
 void jogo(ListaCartas *cartasEscolhidas)
 {
 
+    Carta *cartaEmMovimento = NULL;
     reposicionarListaEscolhidos(cartasEscolhidas, GetScreenWidth() / 8, GetScreenHeight() - (LARGURA_CARTA * 2));
 
     while(1)
@@ -286,8 +309,41 @@ void jogo(ListaCartas *cartasEscolhidas)
         BeginDrawing();
 
             desenhaFundo();
-
             desenhaCartasEscolhidas(cartasEscolhidas);
+
+
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+            {
+                if (cartaEmMovimento == NULL)
+                    cartaEmMovimento = cartaEscolhidasPorPosicao(cartasEscolhidas, GetMouseX(), GetMouseY());
+            }
+
+            if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
+            {
+                if (cartaEmMovimento != NULL)
+                {
+                    //indexCartasEscolhidas = indexListaCartasEscolhidasPorPosicao(cartasEscolhidas, GetMouseX(), GetMouseY());
+
+                    //if (indexCartasEscolhidas >= 0)
+                        //moverCartaDisponiveisParaEscolhidas(cartasDisponiveis, cartasEscolhidas, cartaEmMovimento, indexCartasEscolhidas);
+
+                    cartaEmMovimento->posX = cartaEmMovimento->posXOrigem;
+                    cartaEmMovimento->posY = cartaEmMovimento->posYOrigem;
+                }
+
+                cartaEmMovimento = NULL;
+            }
+
+             if (cartaEmMovimento != NULL)
+            {
+                printf("Id carta em movimento: %d\n", cartaEmMovimento->id);
+
+                cartaEmMovimento->posX = GetMouseX();
+                cartaEmMovimento->posY = GetMouseY();
+
+                desenhaCarta(*cartaEmMovimento);
+            }
+
 
         EndDrawing();
     }
@@ -382,6 +438,30 @@ int totalCartasEscolhidas(ListaCartas *cartasEscolhidas)
     return contador;
 }
 
+int indexListaCartasEscolhidasPorPosicao(ListaCartas *cartasEscolhidas, int posX, int posY)
+{
+    int contador = -1;
+    Carta *aux = cartasEscolhidas->cartaInicial;
+    Rectangle areaCarta;
+
+    while (aux)
+    {
+        contador ++;
+        areaCarta = (Rectangle){aux->posX, aux->posY, LARGURA_CARTA + 15, ALTURA_CARTA + 20};
+        Vector2 ponto = {posX, posY};
+
+        if(CheckCollisionPointRec(ponto, areaCarta))
+        {
+            return contador;
+        }
+
+        aux = aux->proxima;
+    }
+
+    return -1;
+
+}
+
 void desenhaCartasDisponiveis(Carta cartasDisponiveis[], int qtdeCartas)
 {
     Carta *carta = NULL;
@@ -465,30 +545,6 @@ Carta* pegaCartaDisponivelPorPosicao(Carta cartasDisponiveis[], int posX, int po
     }
 
     return NULL;
-}
-
-int indexListaCartasEscolhidasPorPosicao(ListaCartas *cartasEscolhidas, int posX, int posY)
-{
-    int contador = -1;
-    Carta *aux = cartasEscolhidas->cartaInicial;
-    Rectangle areaCarta;
-
-    while (aux)
-    {
-        contador ++;
-        areaCarta = (Rectangle){aux->posX, aux->posY, LARGURA_CARTA + 15, ALTURA_CARTA + 20};
-        Vector2 ponto = {posX, posY};
-
-        if(CheckCollisionPointRec(ponto, areaCarta))
-        {
-            return contador;
-        }
-
-        aux = aux->proxima;
-    }
-
-    return -1;
-
 }
 
 void devolverCartaParaDisponiveis(Carta cartasDisponiveis[], int id)
