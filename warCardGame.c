@@ -6,6 +6,8 @@
 #include <conio.h>
 #include <string.h>
 
+#include "animation.h"
+
 #define QTDE_TOTAL_CARTAS 16
 #define QTDE_CARTAS_EMJOGO 8
 #define LARGURA_CARTA 150
@@ -738,6 +740,9 @@ void DesenhaCena()
 
 }
 
+Texture2D _texture;
+SpriteAnimation _animation;
+
 int main()
 {
     // Initialization
@@ -746,15 +751,40 @@ int main()
     currentScene = SCENE_BLABLA;
 
     SetTraceLogLevel(LOG_ERROR);
-    //SetConfigFlags(FLAG_WINDOW_);
     InitWindow(0 , 0, "War Card Game");
-    //MaximizeWindow();
-
     SetTargetFPS(60);
+
+    _texture = LoadTexture("animations/Shot.png");
+    _animation = CreateSpriteAnimation(_texture, 2, (Rectangle[]){
+
+        (Rectangle){0, 0, 128, 128},
+        (Rectangle){128, 0, 128, 128},
+        (Rectangle){256, 0, 128, 128},
+        (Rectangle){384, 0, 128, 128}
+    }, 4);
+
+
+    printf("%f", _animation.rectangles[2].x);
 
     while (!WindowShouldClose())
     {
-        DesenhaCena();
+        //DesenhaCena();
+
+        BeginDrawing();
+
+            ClearBackground(GRAY);
+
+            Rectangle source = {0, 0, 128, 128};
+
+            Rectangle dest = {200, 200, 128, 128};
+            DrawTexturePro(_texture, source, dest, (Vector2){0, 0}, 1.0, WHITE);
+
+
+            Vector2 origin = {0};
+            DrawSpriteAnimationPro(_animation, dest, origin, 0, WHITE);
+
+        EndDrawing();
+
     }
 
     CloseWindow();
