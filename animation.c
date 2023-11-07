@@ -19,6 +19,7 @@ SpriteAnimation CreateSpriteAnimation(Texture2D personagem, int framesPerSecond,
     }
 
     spriteAnimation.rectangles = mem;
+    spriteAnimation.rectangles = rectangles;
 
     return spriteAnimation;
 }

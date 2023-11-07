@@ -13,6 +13,8 @@
 #define LARGURA_CARTA 150
 #define ALTURA_CARTA 200
 
+#define NUM_ANIMACOES 3
+
 const char* CAMINHO_IMG_PERSONAGENS[QTDE_TOTAL_CARTAS] = {
     "img/soldado.png",
     "img/tanque.png",
@@ -63,9 +65,11 @@ Scene currentScene;
 typedef struct
 {
     Texture2D imgPersonagem;
-    char* Nome;
+    int id;
+    char* nome;
     int forcaAtaque;
-    int forcaDefesa;
+    int vida;
+    char* caminhoSprites[3];
 } Personagem;
 
 typedef struct carta
@@ -267,9 +271,9 @@ void carregarTexturas(Texture2D imagens[], int qtde)
     }
 }
 
-void destroiTexturasPersonagens(Texture2D imagensPersonagens[])
+void destroiTexturasPersonagens(Texture2D imagensPersonagens[], int qtde)
 {
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < qtde; i++)
     {
         UnloadTexture(imagensPersonagens[i]);
     }
@@ -299,8 +303,23 @@ Carta* cartaEscolhidasPorPosicao(ListaCartas *cartasEscolhidas, int posX, int po
 
 //************ GAME SCENE ***************
 
+
+void preencheSpritesPersonagem(Texture2D spritesPersonagem[], Personagem *personagem)
+{
+
+
+
+}
+
 void jogo(ListaCartas *cartasEscolhidas)
 {
+
+    SpriteAnimation animation;
+    Texture2D textureSprite;
+
+    //printf("texture id: %d", textureSprite.id);
+
+    Rectangle movementRec = (Rectangle){50, GetScreenHeight() / 2, 213, 136};
 
     Carta *cartaEmMovimento = NULL;
     reposicionarListaEscolhidos(cartasEscolhidas, GetScreenWidth() / 8, GetScreenHeight() - (LARGURA_CARTA * 2));
@@ -324,13 +343,14 @@ void jogo(ListaCartas *cartasEscolhidas)
             {
                 if (cartaEmMovimento != NULL)
                 {
-                    //indexCartasEscolhidas = indexListaCartasEscolhidasPorPosicao(cartasEscolhidas, GetMouseX(), GetMouseY());
-
-                    //if (indexCartasEscolhidas >= 0)
-                        //moverCartaDisponiveisParaEscolhidas(cartasDisponiveis, cartasEscolhidas, cartaEmMovimento, indexCartasEscolhidas);
-
                     cartaEmMovimento->posX = cartaEmMovimento->posXOrigem;
                     cartaEmMovimento->posY = cartaEmMovimento->posYOrigem;
+
+                    textureSprite = LoadTexture(cartaEmMovimento->personagem->caminhoSprites[1]);
+                    if (!IsTextureReady(textureSprite))
+                        TraceLog(LOG_ERROR, "Could not load textureSprite");
+
+                    printf("caminho sprite %s: ", cartaEmMovimento->personagem->caminhoSprites[1]);
                 }
 
                 cartaEmMovimento = NULL;
@@ -338,7 +358,7 @@ void jogo(ListaCartas *cartasEscolhidas)
 
              if (cartaEmMovimento != NULL)
             {
-                printf("Id carta em movimento: %d\n", cartaEmMovimento->id);
+                //printf("Id carta em movimento: %d\n", cartaEmMovimento->id);
 
                 cartaEmMovimento->posX = GetMouseX();
                 cartaEmMovimento->posY = GetMouseY();
@@ -346,6 +366,18 @@ void jogo(ListaCartas *cartasEscolhidas)
                 desenhaCarta(*cartaEmMovimento);
             }
 
+
+            if (IsTextureReady(textureSprite))
+            {
+                animation = CreateSpriteAnimation(textureSprite, 4, (Rectangle[]){
+                                                (Rectangle){0, 0, 213, 136},
+                                                (Rectangle){213, 0, 213, 136},
+                                                (Rectangle){426, 0, 213, 136},
+                                                (Rectangle){639, 0, 213, 136}
+                                              }, 3);
+                movementRec.x += 10;
+                DrawSpriteAnimationPro(animation, movementRec, (Vector2){0, 0}, 0.0, WHITE);
+            }
 
         EndDrawing();
     }
@@ -355,20 +387,71 @@ void jogo(ListaCartas *cartasEscolhidas)
 
 //************ BLABLA SCENE *************
 
+void preencheCaminhoSpritesPersonagem(int idPersonagem, char* caminhoSprites[], int qtde)
+{
+    char caminhoCompleto[100];
+    char strId[20]; // Aloque memória suficiente para o número máximo de dígitos
+    char strAnimacao[20]; // Aloque memória suficiente para o nome da animação
+
+    for (int i = 0; i < qtde; i++)
+    {
+        strcpy(caminhoCompleto, "animations/");
+
+        switch(i)
+        {
+        case 0:
+            strcpy(strAnimacao, "Idle.png");
+            break;
+        case 1:
+            strcpy(strAnimacao, "Run.png");
+            break;
+        case 2:
+            strcpy(strAnimacao, "Shot.png");
+            break;
+        }
+
+        sprintf(strId, "%ld", idPersonagem);
+        strcat(strId, strAnimacao);
+
+        strcat(caminhoCompleto, strId);
+
+        caminhoSprites[i] = strdup(strId);
+
+        // Lembre-se de liberar a memória alocada por strdup mais tarde
+
+        strAnimacao[0] = '\0'; // Limpa o buffer
+        caminhoCompleto[0] = '\0';
+    }
+}
+
 void criaPersonagens(Personagem personagens[], Texture2D imagensPersonagens[], int qtde)
 {
     Personagem personagem;
 
     for (int i = 0; i < qtde; i++)
     {
-        personagem.Nome = "teste";
+        personagem.id = i;
+        personagem.nome = "teste";
         personagem.imgPersonagem = imagensPersonagens[i];
         personagem.forcaAtaque = 10;
-        personagem.forcaDefesa = 15;
+        personagem.vida = 100;
 
+        char* caminhoSprites[NUM_ANIMACOES];
+        preencheCaminhoSpritesPersonagem(personagem.id, caminhoSprites, NUM_ANIMACOES);
+
+        // Atribua o caminho da animação ao personagem
+        for (int j = 0; j < NUM_ANIMACOES; j++) {
+            personagem.caminhoSprites[j] = strdup(caminhoSprites[j]);
+        }
+
+        // Lembre-se de liberar a memória alocada por strdup mais tarde
+        for (int j = 0; j < NUM_ANIMACOES; j++) {
+            free(caminhoSprites[j]);
+        }
+
+        // Armazene o personagem no array de personagens
         personagens[i] = personagem;
     }
-
 }
 
 void criaCartasDisponiveis(Carta cartasDisponiveis[], Personagem personagens[], int qtdeCartas)
@@ -674,6 +757,8 @@ void montarDeckCartas(ListaCartas *cartasEscolhidas, Carta cartasDisponiveis[])
              if (cartaEmMovimento != NULL)
             {
                 printf("Id carta em movimento: %d\n", cartaEmMovimento->id);
+                printf("Id Personagem: %d\n", cartaEmMovimento->personagem->id);
+                printf("Caminho Sprite Personagem: %s\n", cartaEmMovimento->personagem->caminhoSprites[0]);
 
                 cartaEmMovimento->posX = GetMouseX();
                 cartaEmMovimento->posY = GetMouseY();
@@ -764,26 +849,24 @@ int main()
     }, 4);
 
 
-    printf("%f", _animation.rectangles[2].x);
-
     while (!WindowShouldClose())
     {
-        //DesenhaCena();
+        DesenhaCena();
 
-        BeginDrawing();
+        /*BeginDrawing();
 
             ClearBackground(GRAY);
 
-            Rectangle source = {0, 0, 128, 128};
+            //Rectangle source = {0, 0, 128, 128};
 
             Rectangle dest = {200, 200, 128, 128};
-            DrawTexturePro(_texture, source, dest, (Vector2){0, 0}, 1.0, WHITE);
+            //DrawTexturePro(_texture, source, dest, (Vector2){0, 0}, 1.0, WHITE);
 
 
             Vector2 origin = {0};
             DrawSpriteAnimationPro(_animation, dest, origin, 0, WHITE);
 
-        EndDrawing();
+        EndDrawing();*/
 
     }
 
