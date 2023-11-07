@@ -95,6 +95,26 @@ typedef struct
     Carta *cartaInicial;
 } ListaCartas;
 
+typedef struct Timer {
+    double startTime;   // Start time (seconds)
+    double lifeTime;    // Lifetime (seconds)
+} Timer;
+
+void StartTimer(Timer *timer, double lifetime)
+{
+    timer->startTime = GetTime();
+    timer->lifeTime = lifetime;
+}
+
+bool TimerDone(Timer timer)
+{
+    return GetTime() - timer.startTime >= timer.lifeTime;
+}
+
+double GetElapsed(Timer timer)
+{
+    return GetTime() - timer.startTime;
+}
 
 void inserir_no_comeco(ListaCartas *listaCartas, Carta *carta)
 {
@@ -303,14 +323,6 @@ Carta* cartaEscolhidasPorPosicao(ListaCartas *cartasEscolhidas, int posX, int po
 
 //************ GAME SCENE ***************
 
-
-void preencheSpritesPersonagem(Texture2D spritesPersonagem[], Personagem *personagem)
-{
-
-
-
-}
-
 void jogo(ListaCartas *cartasEscolhidas)
 {
 
@@ -322,7 +334,7 @@ void jogo(ListaCartas *cartasEscolhidas)
     Rectangle movementRec = (Rectangle){50, GetScreenHeight() / 2, 213, 136};
 
     Carta *cartaEmMovimento = NULL;
-    reposicionarListaEscolhidos(cartasEscolhidas, GetScreenWidth() / 8, GetScreenHeight() - (LARGURA_CARTA * 2));
+    reposicionarListaEscolhidos(cartasEscolhidas, (GetScreenWidth() / 2) * 0.15 , GetScreenHeight() - (LARGURA_CARTA * 2));
 
     while(1)
     {
@@ -346,11 +358,11 @@ void jogo(ListaCartas *cartasEscolhidas)
                     cartaEmMovimento->posX = cartaEmMovimento->posXOrigem;
                     cartaEmMovimento->posY = cartaEmMovimento->posYOrigem;
 
-                    textureSprite = LoadTexture(cartaEmMovimento->personagem->caminhoSprites[1]);
+                    textureSprite = LoadTexture(cartaEmMovimento->personagem->caminhoSprites[0]);
                     if (!IsTextureReady(textureSprite))
                         TraceLog(LOG_ERROR, "Could not load textureSprite");
 
-                    printf("caminho sprite %s: ", cartaEmMovimento->personagem->caminhoSprites[1]);
+                    printf("caminho sprite %s: ", cartaEmMovimento->personagem->caminhoSprites[0]);
                 }
 
                 cartaEmMovimento = NULL;
@@ -369,13 +381,17 @@ void jogo(ListaCartas *cartasEscolhidas)
 
             if (IsTextureReady(textureSprite))
             {
+                int width = textureSprite.width / 4;
+                int height = textureSprite.height;
+
                 animation = CreateSpriteAnimation(textureSprite, 4, (Rectangle[]){
-                                                (Rectangle){0, 0, 213, 136},
-                                                (Rectangle){213, 0, 213, 136},
-                                                (Rectangle){426, 0, 213, 136},
-                                                (Rectangle){639, 0, 213, 136}
+                                                (Rectangle){width * 0, 0, width, height},
+                                                (Rectangle){width * 1, 0, width, height},
+                                                (Rectangle){width * 2, 0, width, height},
+                                                (Rectangle){width * 3, 0, width, height}
                                               }, 3);
-                movementRec.x += 10;
+                movementRec.width = width;
+                movementRec.height = height;
                 DrawSpriteAnimationPro(animation, movementRec, (Vector2){0, 0}, 0.0, WHITE);
             }
 
@@ -385,7 +401,7 @@ void jogo(ListaCartas *cartasEscolhidas)
 
 
 
-//************ BLABLA SCENE *************
+//************ DECK SCENE *************
 
 void preencheCaminhoSpritesPersonagem(int idPersonagem, char* caminhoSprites[], int qtde)
 {
@@ -410,12 +426,12 @@ void preencheCaminhoSpritesPersonagem(int idPersonagem, char* caminhoSprites[], 
             break;
         }
 
-        sprintf(strId, "%ld", idPersonagem);
+        sprintf(strId, "%d", idPersonagem);
         strcat(strId, strAnimacao);
 
         strcat(caminhoCompleto, strId);
 
-        caminhoSprites[i] = strdup(strId);
+        caminhoSprites[i] = strdup(caminhoCompleto);
 
         // Lembre-se de liberar a memória alocada por strdup mais tarde
 
@@ -458,7 +474,7 @@ void criaCartasDisponiveis(Carta cartasDisponiveis[], Personagem personagens[], 
 {
 
     Carta carta;
-    float xInicial = 30, yInicial = 500;
+    float xInicial = 50, yInicial = (GetScreenHeight() / 2.5) ;
     int espacamento = 15;
 
     for (int i = 0; i < qtdeCartas; i++)
@@ -484,7 +500,7 @@ void criaCartasDisponiveis(Carta cartasDisponiveis[], Personagem personagens[], 
 
 void criaListaCartasEscolhidas(ListaCartas *cartasEscolhidas)
 {
-    int xInicial = 30, yInicial = 35, espacamento = 15;
+    int xInicial = 50, yInicial = 35, espacamento = 15;
 
     cartasEscolhidas->cartaInicial = NULL;
     cartasEscolhidas->tam = 0;
@@ -595,7 +611,7 @@ void desenhaCartasDisponiveis(Carta cartasDisponiveis[], int qtdeCartas)
                 if (x != -1 && i != 0)
                 {
                     carta->posX = x + (LARGURA_CARTA + espacamento) * j;
-                    carta->posY = ALTURA_CARTA + 515;
+                    carta->posY = ALTURA_CARTA + carta->posYOrigem + 15;
                 }
 
                 desenhaCarta(*carta);
@@ -709,8 +725,8 @@ void montarDeckCartas(ListaCartas *cartasEscolhidas, Carta cartasDisponiveis[])
 
             if (totalCartasEscolhidas(cartasEscolhidas) >= QTDE_CARTAS_EMJOGO)
             {
-                botao_avancar.centerX = (GetScreenWidth() / 2) * 1.55;
-                botao_avancar.centerY = (GetScreenHeight() / 2) * 0.80;
+                botao_avancar.centerX = GetScreenWidth() * 0.90;
+                botao_avancar.centerY = (GetScreenHeight() / 2) * 0.65;
                 botao_avancar.raioX = 100;
                 botao_avancar.raioY = 50;
                 desenhaBotaoEllipse(botao_avancar);

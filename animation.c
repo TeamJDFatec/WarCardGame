@@ -1,4 +1,4 @@
-#include <animation.h>
+#include "animation.h"
 #include <stdlib.h>
 
 SpriteAnimation CreateSpriteAnimation(Texture2D personagem, int framesPerSecond, Rectangle rectangles[], int rectanglesLength)

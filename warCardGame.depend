@@ -19,3 +19,20 @@
 1699215870 d:\development\github\warcardgame\animation.h
 	<raylib.h>
 
+1699396116 source:c:\users\0040962213031\documents\raylib\warcardgame\animation.c
+	"animation.h"
+	<stdlib.h>
+
+1699396076 c:\users\0040962213031\documents\raylib\warcardgame\animation.h
+	<raylib.h>
+
+1699397967 source:c:\users\0040962213031\documents\raylib\warcardgame\warcardgame.c
+	"raylib.h"
+	<locale.h>
+	<stdio.h>
+	<stdlib.h>
+	<time.h>
+	<conio.h>
+	<string.h>
+	"animation.h"
+
