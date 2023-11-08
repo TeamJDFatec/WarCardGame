@@ -422,7 +422,9 @@ void jogo(ListaCartas *cartasEscolhidas)
                     if(timeAnimation.lifeTime == 0)
                     {   printf("Antes timeAnimation.startTime %f\n", timeAnimation.startTime);
                         printf("Antes timeAnimation.lifeTime %f\n", timeAnimation.lifeTime);
+
                         StartTimer(&timeAnimation, 2.5);
+
                         printf("Depois timeAnimation.startTime %f\n", timeAnimation.startTime);
                         printf("Depois timeAnimation.lifeTime %f\n", timeAnimation.lifeTime);
                     }

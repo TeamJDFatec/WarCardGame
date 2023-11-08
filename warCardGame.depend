@@ -36,3 +36,20 @@
 	<string.h>
 	"animation.h"
 
+1699440776 source:c:\users\victo\onedrive\documentos\raylib\warcardgame\animation.c
+	"animation.h"
+	<stdlib.h>
+
+1699283403 c:\users\victo\onedrive\documentos\raylib\warcardgame\animation.h
+	<raylib.h>
+
+1699460018 source:c:\users\victo\onedrive\documentos\raylib\warcardgame\warcardgame.c
+	"raylib.h"
+	<locale.h>
+	<stdio.h>
+	<stdlib.h>
+	<time.h>
+	<conio.h>
+	<string.h>
+	"animation.h"
+
