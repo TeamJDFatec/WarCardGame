@@ -327,7 +327,13 @@ void jogo(ListaCartas *cartasEscolhidas)
 {
 
     SpriteAnimation animation;
-    Texture2D textureSprite;
+    Texture2D textureSprite = {0};
+    int estadoPersonagem = 0; //0 = Idle; 1 - Run; 2 - Shot
+    Personagem *inScenePersonagem = NULL;
+
+    Timer timeAnimation;
+    timeAnimation.startTime = 0;
+    timeAnimation.lifeTime = 0;
 
     //printf("texture id: %d", textureSprite.id);
 
@@ -341,30 +347,43 @@ void jogo(ListaCartas *cartasEscolhidas)
 
         BeginDrawing();
 
-            desenhaFundo();
+            //desenhaFundo();
+            ClearBackground(GRAY);
             desenhaCartasEscolhidas(cartasEscolhidas);
 
 
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
             {
                 if (cartaEmMovimento == NULL)
+                {
                     cartaEmMovimento = cartaEscolhidasPorPosicao(cartasEscolhidas, GetMouseX(), GetMouseY());
+                    printf("Pressed\n");
+                }
+
             }
 
             if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
             {
+
                 if (cartaEmMovimento != NULL)
                 {
                     cartaEmMovimento->posX = cartaEmMovimento->posXOrigem;
                     cartaEmMovimento->posY = cartaEmMovimento->posYOrigem;
+                    inScenePersonagem = cartaEmMovimento->personagem;
 
-                    textureSprite = LoadTexture(cartaEmMovimento->personagem->caminhoSprites[0]);
-                    if (!IsTextureReady(textureSprite))
-                        TraceLog(LOG_ERROR, "Could not load textureSprite");
-
+                    if (inScenePersonagem != NULL)
+                    {
+                        if (IsTextureReady(textureSprite))
+                        {
+                            UnloadTexture(textureSprite);
+                        }
+                        textureSprite = LoadTexture(inScenePersonagem->caminhoSprites[0]);
+                        estadoPersonagem = 0;
+                    }
                     printf("caminho sprite %s: ", cartaEmMovimento->personagem->caminhoSprites[0]);
                 }
 
+                printf("Released\n");
                 cartaEmMovimento = NULL;
             }
 
@@ -378,21 +397,61 @@ void jogo(ListaCartas *cartasEscolhidas)
                 desenhaCarta(*cartaEmMovimento);
             }
 
-
-            if (IsTextureReady(textureSprite))
+            if (inScenePersonagem != NULL)
             {
-                int width = textureSprite.width / 4;
-                int height = textureSprite.height;
+                //printf("inScenePersonagem->id %d", inScenePersonagem->id);
+                if (IsTextureReady(textureSprite))
+                {
 
-                animation = CreateSpriteAnimation(textureSprite, 4, (Rectangle[]){
-                                                (Rectangle){width * 0, 0, width, height},
-                                                (Rectangle){width * 1, 0, width, height},
-                                                (Rectangle){width * 2, 0, width, height},
-                                                (Rectangle){width * 3, 0, width, height}
-                                              }, 3);
-                movementRec.width = width;
-                movementRec.height = height;
-                DrawSpriteAnimationPro(animation, movementRec, (Vector2){0, 0}, 0.0, WHITE);
+                    printf("Ready");
+                    int width = textureSprite.width / 4;
+                    int height = textureSprite.height;
+
+                    animation = CreateSpriteAnimation(textureSprite, 4, (Rectangle[]){
+                                                    (Rectangle){width * 0, 0, width, height},
+                                                    (Rectangle){width * 1, 0, width, height},
+                                                    (Rectangle){width * 2, 0, width, height},
+                                                    (Rectangle){width * 3, 0, width, height}
+                                                }, 4);
+                    movementRec.width = width;
+                    movementRec.height = height;
+                    if (estadoPersonagem == 1)
+                        movementRec.x += 3;
+                    DrawSpriteAnimationPro(animation, movementRec, (Vector2){0, 0}, 0.0, WHITE);
+
+                    if(timeAnimation.lifeTime == 0)
+                    {   printf("Antes timeAnimation.startTime %f\n", timeAnimation.startTime);
+                        printf("Antes timeAnimation.lifeTime %f\n", timeAnimation.lifeTime);
+                        StartTimer(&timeAnimation, 2.5);
+                        printf("Depois timeAnimation.startTime %f\n", timeAnimation.startTime);
+                        printf("Depois timeAnimation.lifeTime %f\n", timeAnimation.lifeTime);
+                    }
+
+
+
+                    if (TimerDone(timeAnimation))
+                    {
+                        printf("Timer Done\n");
+
+                        if (estadoPersonagem == 0)
+                        {
+                            UnloadTexture(textureSprite);
+                            textureSprite = LoadTexture(inScenePersonagem->caminhoSprites[1]);
+                            estadoPersonagem = 1;
+
+                            StartTimer(&timeAnimation, 2.5);
+                        }
+                        else if (estadoPersonagem == 1)
+                        {
+                            textureSprite = LoadTexture(inScenePersonagem->caminhoSprites[2]);
+                            estadoPersonagem = 2;
+                        }
+                    }
+                }
+                else
+                {
+                    TraceLog(LOG_ERROR, "Texture Not Ready");
+                }
             }
 
         EndDrawing();
@@ -787,6 +846,7 @@ void montarDeckCartas(ListaCartas *cartasEscolhidas, Carta cartasDisponiveis[])
     }
 
     //destroiTexturasPersonagens(imagensPersonagens);
+    free(cartaEmMovimento);
     currentScene = SCENE_GAME;
 
     return;

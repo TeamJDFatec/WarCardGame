@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1699348775 source:d:\development\github\warcardgame\warcardgame.c
+1699434578 source:d:\development\github\warcardgame\warcardgame.c
 	"raylib.h"
 	<locale.h>
 	<stdio.h>
@@ -9,8 +9,8 @@
 	<string.h>
 	"animation.h"
 
-1699306552 source:d:\development\github\warcardgame\animation.c
-	<animation.h>
+1699407662 source:d:\development\github\warcardgame\animation.c
+	"animation.h"
 	<stdlib.h>
 
 1699215870 d:\development\github\warcardgame\\animation.h
