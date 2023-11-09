@@ -15,6 +15,8 @@
 
 #define NUM_ANIMACOES 3
 
+#define VIDA_MAXIMA 100
+
 const char* CAMINHO_IMG_PERSONAGENS[QTDE_TOTAL_CARTAS] = {
     "img/soldado.png",
     "img/tanque.png",
@@ -70,6 +72,8 @@ typedef struct
     int forcaAtaque;
     int vida;
     char* caminhoSprites[3];
+    int posX;
+    int posY;
 } Personagem;
 
 typedef struct carta
@@ -323,6 +327,29 @@ Carta* cartaEscolhidasPorPosicao(ListaCartas *cartasEscolhidas, int posX, int po
 
 //************ GAME SCENE ***************
 
+void desenhBarraVida(Personagem *personagem, int posX, int posY, int textureHeight)
+{
+    if (personagem == NULL)
+        return;
+
+    int vida = personagem->vida;
+    int tamanhoBarra = 100;
+
+    Rectangle source = (Rectangle){0, 0, 662, 377};
+    Rectangle destino = (Rectangle){posX + 20, posY - 15, 32, 18};
+    Texture2D coracaoVida = LoadTexture("img/coracaoVida.png");
+
+    if (vida < VIDA_MAXIMA)
+        tamanhoBarra = (tamanhoBarra * vida) / VIDA_MAXIMA;
+
+    Rectangle barraVida = (Rectangle){posX + tamanhoBarra / 2, posY - 10, tamanhoBarra, 10};
+    DrawRectangleRec(barraVida, RED);
+    DrawRectangleLinesEx(barraVida, 2, BLACK);
+
+    if (IsTextureReady(coracaoVida))
+        DrawTexturePro(coracaoVida, source, destino, (Vector2){0}, 0, WHITE);
+}
+
 void jogo(ListaCartas *cartasEscolhidas)
 {
 
@@ -379,6 +406,7 @@ void jogo(ListaCartas *cartasEscolhidas)
                         }
                         textureSprite = LoadTexture(inScenePersonagem->caminhoSprites[0]);
                         estadoPersonagem = 0;
+                        movementRec.x = 50;
                     }
                     printf("caminho sprite %s: ", cartaEmMovimento->personagem->caminhoSprites[0]);
                 }
@@ -402,7 +430,7 @@ void jogo(ListaCartas *cartasEscolhidas)
                 //printf("inScenePersonagem->id %d", inScenePersonagem->id);
                 if (IsTextureReady(textureSprite))
                 {
-
+                    desenhBarraVida(inScenePersonagem, movementRec.x, movementRec.y, textureSprite.height);
                     printf("Ready");
                     int width = textureSprite.width / 4;
                     int height = textureSprite.height;
