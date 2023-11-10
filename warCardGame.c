@@ -17,6 +17,7 @@
 
 #define VIDA_MAXIMA 100
 
+
 const char* CAMINHO_IMG_PERSONAGENS[QTDE_TOTAL_CARTAS] = {
     "img/soldado.png",
     "img/tanque.png",
@@ -104,6 +105,11 @@ typedef struct Timer {
     double lifeTime;    // Lifetime (seconds)
 } Timer;
 
+Texture2D imagensPersonagens[QTDE_TOTAL_CARTAS];
+Personagem personagens[QTDE_TOTAL_CARTAS];
+Carta cartasDisponiveis[QTDE_TOTAL_CARTAS];
+
+
 void StartTimer(Timer *timer, double lifetime)
 {
     timer->startTime = GetTime();
@@ -138,7 +144,7 @@ void inserir_no_comeco(ListaCartas *listaCartas, Carta *carta)
         listaCartas->tam++;
     }
     else{
-        printf("Erro ao alocar memoria, inicio da lista!\n");
+        TraceLog(LOG_ERROR, "Erro ao alocar memoria, inicio da lista!");
     }
 }
 
@@ -170,7 +176,7 @@ void inserir_no_fim(ListaCartas *listaCartas, Carta *carta)
         listaCartas->tam++;
     }
     else{
-        printf("Erro ao alocar memoria, fim da lista!\n");
+        TraceLog(LOG_ERROR, "Erro ao alocar memoria, fim da lista!");
     }
 }
 
@@ -362,8 +368,6 @@ void jogo(ListaCartas *cartasEscolhidas)
     timeAnimation.startTime = 0;
     timeAnimation.lifeTime = 0;
 
-    //printf("texture id: %d", textureSprite.id);
-
     Rectangle movementRec = (Rectangle){50, GetScreenHeight() / 2, 213, 136};
 
     Carta *cartaEmMovimento = NULL;
@@ -384,7 +388,6 @@ void jogo(ListaCartas *cartasEscolhidas)
                 if (cartaEmMovimento == NULL)
                 {
                     cartaEmMovimento = cartaEscolhidasPorPosicao(cartasEscolhidas, GetMouseX(), GetMouseY());
-                    printf("Pressed\n");
                 }
 
             }
@@ -408,17 +411,12 @@ void jogo(ListaCartas *cartasEscolhidas)
                         estadoPersonagem = 0;
                         movementRec.x = 50;
                     }
-                    printf("caminho sprite %s: ", cartaEmMovimento->personagem->caminhoSprites[0]);
                 }
-
-                printf("Released\n");
                 cartaEmMovimento = NULL;
             }
 
              if (cartaEmMovimento != NULL)
             {
-                //printf("Id carta em movimento: %d\n", cartaEmMovimento->id);
-
                 cartaEmMovimento->posX = GetMouseX();
                 cartaEmMovimento->posY = GetMouseY();
 
@@ -427,11 +425,9 @@ void jogo(ListaCartas *cartasEscolhidas)
 
             if (inScenePersonagem != NULL)
             {
-                //printf("inScenePersonagem->id %d", inScenePersonagem->id);
                 if (IsTextureReady(textureSprite))
                 {
                     desenhBarraVida(inScenePersonagem, movementRec.x, movementRec.y, textureSprite.height);
-                    printf("Ready");
                     int width = textureSprite.width / 4;
                     int height = textureSprite.height;
 
@@ -448,21 +444,10 @@ void jogo(ListaCartas *cartasEscolhidas)
                     DrawSpriteAnimationPro(animation, movementRec, (Vector2){0, 0}, 0.0, WHITE);
 
                     if(timeAnimation.lifeTime == 0)
-                    {   printf("Antes timeAnimation.startTime %f\n", timeAnimation.startTime);
-                        printf("Antes timeAnimation.lifeTime %f\n", timeAnimation.lifeTime);
-
                         StartTimer(&timeAnimation, 2.5);
-
-                        printf("Depois timeAnimation.startTime %f\n", timeAnimation.startTime);
-                        printf("Depois timeAnimation.lifeTime %f\n", timeAnimation.lifeTime);
-                    }
-
-
 
                     if (TimerDone(timeAnimation))
                     {
-                        printf("Timer Done\n");
-
                         if (estadoPersonagem == 0)
                         {
                             UnloadTexture(textureSprite);
@@ -721,10 +706,6 @@ Carta* pegaCartaDisponivelPorPosicao(Carta cartasDisponiveis[], int posX, int po
         areaCarta = (Rectangle){cartasDisponiveis[i].posX, cartasDisponiveis[i].posY, LARGURA_CARTA, ALTURA_CARTA};
         Vector2 ponto = {posX, posY};
 
-        //printf("Id: %d\n", cartasDisponiveis[i].id);
-        //printf("PosX: %d\n", cartasDisponiveis[i].posX);
-        //printf("PosY: %d\n", cartasDisponiveis[i].posY);
-
         if(CheckCollisionPointRec(ponto, areaCarta))
         {
             if (cartasDisponiveis[i].emJogo == false)
@@ -769,7 +750,7 @@ void moverCartaDisponiveisParaEscolhidas(Carta cartasDisponiveis[], ListaCartas 
     aux->id = cartaEmMovimento->id;
 }
 
-void montarDeckCartas(ListaCartas *cartasEscolhidas, Carta cartasDisponiveis[])
+void montarDeckCartas(ListaCartas *cartasEscolhidas)
 {
 
     //Button_Rec botao_avancar;
@@ -777,16 +758,8 @@ void montarDeckCartas(ListaCartas *cartasEscolhidas, Carta cartasDisponiveis[])
     Button_Ellipse botao_avancar;
     botao_avancar.corBotao = DARKBROWN;
 
-    //Texture2D imagensPersonagens[QTDE_TOTAL_CARTAS];
-    //Personagem personagens[QTDE_TOTAL_CARTAS];
-    //Carta cartasDisponiveis[QTDE_TOTAL_CARTAS];
-
     Carta *cartaEmMovimento = NULL;
     int indexCartasEscolhidas = -1;
-
-    //carregarTexturas(imagensPersonagens, QTDE_TOTAL_CARTAS);
-    //criaPersonagens(personagens, imagensPersonagens, QTDE_TOTAL_CARTAS);
-    //criaCartasDisponiveis(cartasDisponiveis, personagens, QTDE_TOTAL_CARTAS);
 
     criaListaCartasEscolhidas(cartasEscolhidas);
 
@@ -847,8 +820,6 @@ void montarDeckCartas(ListaCartas *cartasEscolhidas, Carta cartasDisponiveis[])
                 {
                     indexCartasEscolhidas = indexListaCartasEscolhidasPorPosicao(cartasEscolhidas, GetMouseX(), GetMouseY());
 
-                    printf("%d index\n", indexCartasEscolhidas);
-
                     if (indexCartasEscolhidas >= 0)
                         moverCartaDisponiveisParaEscolhidas(cartasDisponiveis, cartasEscolhidas, cartaEmMovimento, indexCartasEscolhidas);
 
@@ -861,10 +832,6 @@ void montarDeckCartas(ListaCartas *cartasEscolhidas, Carta cartasDisponiveis[])
 
              if (cartaEmMovimento != NULL)
             {
-                printf("Id carta em movimento: %d\n", cartaEmMovimento->id);
-                printf("Id Personagem: %d\n", cartaEmMovimento->personagem->id);
-                printf("Caminho Sprite Personagem: %s\n", cartaEmMovimento->personagem->caminhoSprites[0]);
-
                 cartaEmMovimento->posX = GetMouseX();
                 cartaEmMovimento->posY = GetMouseY();
 
@@ -875,7 +842,6 @@ void montarDeckCartas(ListaCartas *cartasEscolhidas, Carta cartasDisponiveis[])
 
     }
 
-    //destroiTexturasPersonagens(imagensPersonagens);
     free(cartaEmMovimento);
     currentScene = SCENE_GAME;
 
@@ -908,21 +874,13 @@ void DesenhaCena()
 {
     ListaCartas cartasEscolhidas;
 
-    Texture2D imagensPersonagens[QTDE_TOTAL_CARTAS];
-    Personagem personagens[QTDE_TOTAL_CARTAS];
-    Carta cartasDisponiveis[QTDE_TOTAL_CARTAS];
-
-    carregarTexturas(imagensPersonagens, QTDE_TOTAL_CARTAS);
-    criaPersonagens(personagens, imagensPersonagens, QTDE_TOTAL_CARTAS);
-    criaCartasDisponiveis(cartasDisponiveis, personagens, QTDE_TOTAL_CARTAS);
-
     switch (currentScene)
     {
     case SCENE_MENU:
         menu();
         break;
     case SCENE_BLABLA:
-        montarDeckCartas(&cartasEscolhidas, cartasDisponiveis);
+        montarDeckCartas(&cartasEscolhidas);
         break;
     case SCENE_GAME:
         jogo(&cartasEscolhidas);
@@ -930,9 +888,6 @@ void DesenhaCena()
     }
 
 }
-
-Texture2D _texture;
-SpriteAnimation _animation;
 
 int main()
 {
@@ -945,37 +900,17 @@ int main()
     InitWindow(0 , 0, "War Card Game");
     SetTargetFPS(60);
 
-    _texture = LoadTexture("animations/Shot.png");
-    _animation = CreateSpriteAnimation(_texture, 2, (Rectangle[]){
-
-        (Rectangle){0, 0, 128, 128},
-        (Rectangle){128, 0, 128, 128},
-        (Rectangle){256, 0, 128, 128},
-        (Rectangle){384, 0, 128, 128}
-    }, 4);
-
+    carregarTexturas(imagensPersonagens, QTDE_TOTAL_CARTAS);
+    criaCartasDisponiveis(cartasDisponiveis, personagens, QTDE_TOTAL_CARTAS);
+    criaPersonagens(personagens, imagensPersonagens, QTDE_TOTAL_CARTAS);
 
     while (!WindowShouldClose())
     {
         DesenhaCena();
 
-        /*BeginDrawing();
-
-            ClearBackground(GRAY);
-
-            //Rectangle source = {0, 0, 128, 128};
-
-            Rectangle dest = {200, 200, 128, 128};
-            //DrawTexturePro(_texture, source, dest, (Vector2){0, 0}, 1.0, WHITE);
-
-
-            Vector2 origin = {0};
-            DrawSpriteAnimationPro(_animation, dest, origin, 0, WHITE);
-
-        EndDrawing();*/
-
     }
 
+    destroiTexturasPersonagens(imagensPersonagens, QTDE_TOTAL_CARTAS);
     CloseWindow();
 
     return 0;
