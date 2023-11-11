@@ -19,22 +19,22 @@
 
 
 const char* CAMINHO_IMG_PERSONAGENS[QTDE_TOTAL_CARTAS] = {
-    "img/soldado.png",
-    "img/tanque.png",
-    "img/soldado.png",
-    "img/tanque.png",
-    "img/soldado.png",
-    "img/tanque.png",
-    "img/soldado.png",
-    "img/tanque.png",
-    "img/tanque.png",
-    "img/soldado.png",
-    "img/tanque.png",
-    "img/soldado.png",
-    "img/tanque.png",
-    "img/soldado.png",
-    "img/tanque.png",
-    "img/soldado.png"
+    "animations/0Idle.png",
+    "animations/1Idle.png",
+    "animations/2Idle.png",
+    "animations/3Idle.png",
+    "animations/4Idle.png",
+    "animations/5Idle.png",
+    "animations/6Idle.png",
+    "animations/7Idle.png",
+    "animations/8Idle.png",
+    "animations/9Idle.png",
+    "animations/10Idle.png",
+    "animations/11Idle.png",
+    "animations/12Idle.png",
+    "animations/13Idle.png",
+    "animations/14Idle.png",
+    "animations/15Idle.png"
     };
 
 
@@ -73,6 +73,7 @@ typedef struct
     int forcaAtaque;
     int vida;
     char* caminhoSprites[3];
+    int qtdeFrames;
     int posX;
     int posY;
 } Personagem;
@@ -220,6 +221,18 @@ bool isMouseOverButtonRec(Button_Rec button)
     return CheckCollisionPointRec(GetMousePosition(), button.areaBotao);
 }
 
+int sorteiaNumero(int min, int max)
+{
+    srand(time(NULL));
+
+    int numeroAleatorio = rand() % max;
+
+    if (numeroAleatorio < min)
+        numeroAleatorio = min;
+
+    return numeroAleatorio;
+}
+
 void reposicionarListaEscolhidos(ListaCartas *cartasEscolhidas, int posXInicial, int posY)
 {
 
@@ -258,8 +271,10 @@ void desenhaFundo()
 
 void desenhaCarta(Carta carta)
 {
-    Rectangle molde;
-    Color cartaCor = carta.emJogo ? DARKGRAY : BLACK;
+    Rectangle molde = {0};
+    Rectangle moldeImgPersonagem = {0};
+    Texture2D imgPersonagem = {0};
+    Color cartaCor = carta.emJogo ? DARKGRAY : GRAY;
     Color personagemCor = carta.emJogo ? BLACK : WHITE;
 
     molde.x = carta.posX;
@@ -273,7 +288,24 @@ void desenhaCarta(Carta carta)
         DrawRectangleRec(molde, cartaCor);
         DrawRectangleLinesEx(molde, 10, BROWN);
 
-        DrawTexture(carta.personagem->imgPersonagem, molde.x + 20, molde.y + 25, personagemCor);
+        imgPersonagem = carta.personagem->imgPersonagem;
+
+        if (IsTextureReady(imgPersonagem))
+        {
+            moldeImgPersonagem = (Rectangle){molde.x + 20, molde.y + 25, imgPersonagem.width / 4, imgPersonagem.height};
+
+            DrawTexturePro(imgPersonagem,
+                           (Rectangle){0, 0, (imgPersonagem.width / 4), imgPersonagem.height},
+                           moldeImgPersonagem,
+                           (Vector2){0},
+                           0,
+                           personagemCor);
+        }
+        else
+        {
+            TraceLog(LOG_ERROR, "Imagem do personagem nao carregada");
+        }
+
     }
     else
     {
@@ -295,6 +327,7 @@ void desenhaCartasEscolhidas(ListaCartas *cartasEscolhidas)
 
 void carregarTexturas(Texture2D imagens[], int qtde)
 {
+
     for (int i = 0; i < qtde; i++)
     {
         imagens[i] = LoadTexture(CAMINHO_IMG_PERSONAGENS[i]);
@@ -333,13 +366,12 @@ Carta* cartaEscolhidasPorPosicao(ListaCartas *cartasEscolhidas, int posX, int po
 
 //************ GAME SCENE ***************
 
-void desenhBarraVida(Personagem *personagem, int posX, int posY, int textureHeight)
+void desenhBarraVida(Personagem *personagem, int posX, int posY, int tamanhoBarra)
 {
     if (personagem == NULL)
         return;
 
     int vida = personagem->vida;
-    int tamanhoBarra = 100;
 
     Rectangle source = (Rectangle){0, 0, 662, 377};
     Rectangle destino = (Rectangle){posX + 20, posY - 15, 32, 18};
@@ -378,11 +410,13 @@ void TextureFlipHorizontal(Texture2D *texture)
 void jogo(ListaCartas *cartasEscolhidas)
 {
 
-    SpriteAnimation animation;
+    SpriteAnimation animation = {0};
     Texture2D textureSprite = {0};
     Texture2D spriteMaquina = {0};
     int estadoPersonagemPlayer = 0; //0 = Idle; 1 - Run; 2 - Shot
     int estadoPersonagemMaquina = 0; //0 = Idle; 1 - Run; 2 - Shot
+    int vidaMaximaPersonagemPlayer = 0;
+    int vidaMaximaPersonagemMaquina = 0;
     Personagem *inScenePersonagem = NULL;
     Personagem *sorteado = NULL;
 
@@ -437,6 +471,9 @@ void jogo(ListaCartas *cartasEscolhidas)
                         TextureFlipHorizontal(&spriteMaquina);
 
                         estadoPersonagemPlayer = 0;
+                        vidaMaximaPersonagemPlayer = inScenePersonagem->vida;
+                        vidaMaximaPersonagemMaquina = sorteado->vida;
+
                         movementRecPlayer.x = 50;
                         movementRecMaquina.x = GetScreenWidth() * 0.80;
                     }
@@ -452,11 +489,14 @@ void jogo(ListaCartas *cartasEscolhidas)
                 desenhaCarta(*cartaEmMovimento);
             }
 
+
             if (inScenePersonagem != NULL)
             {
                 if (IsTextureReady(textureSprite))
                 {
-                    desenhBarraVida(inScenePersonagem, movementRecPlayer.x, movementRecPlayer.y, textureSprite.height);
+                    desenhBarraVida(inScenePersonagem, movementRecPlayer.x, movementRecPlayer.y, vidaMaximaPersonagemPlayer);
+                    printf("vida maxima player %d", vidaMaximaPersonagemPlayer);
+
                     int width = textureSprite.width / 4;
                     int height = textureSprite.height;
 
@@ -476,7 +516,8 @@ void jogo(ListaCartas *cartasEscolhidas)
                     {
                         if (IsTextureReady(spriteMaquina))
                         {
-                            desenhBarraVida(sorteado, movementRecMaquina.x, movementRecMaquina.y, spriteMaquina.height);
+                            desenhBarraVida(sorteado, movementRecMaquina.x, movementRecMaquina.y, vidaMaximaPersonagemMaquina);
+                            printf("vida maxima player %d", vidaMaximaPersonagemMaquina);
                             int width = spriteMaquina.width / 4;
                             int height = spriteMaquina.height;
 
@@ -595,14 +636,15 @@ void preencheCaminhoSpritesPersonagem(int idPersonagem, char* caminhoSprites[], 
 void criaPersonagens(Personagem personagens[], Texture2D imagensPersonagens[], int qtde)
 {
     Personagem personagem;
+    int qtdeFrames = 4;
 
     for (int i = 0; i < qtde; i++)
     {
         personagem.id = i;
         personagem.nome = "teste";
         personagem.imgPersonagem = imagensPersonagens[i];
-        personagem.forcaAtaque = 10;
-        personagem.vida = 100;
+        personagem.forcaAtaque = sorteiaNumero(10, 60);
+        personagem.vida = sorteiaNumero(100, 200);
 
         char* caminhoSprites[NUM_ANIMACOES];
         preencheCaminhoSpritesPersonagem(personagem.id, caminhoSprites, NUM_ANIMACOES);
@@ -616,6 +658,7 @@ void criaPersonagens(Personagem personagens[], Texture2D imagensPersonagens[], i
         for (int j = 0; j < NUM_ANIMACOES; j++) {
             free(caminhoSprites[j]);
         }
+        personagem.qtdeFrames = qtdeFrames;
 
         // Armazene o personagem no array de personagens
         personagens[i] = personagem;
@@ -982,10 +1025,15 @@ int main()
     criaCartasDisponiveis(cartasDisponiveis, personagens, QTDE_TOTAL_CARTAS);
     criaPersonagens(personagens, imagensPersonagens, QTDE_TOTAL_CARTAS);
 
-
     while (!WindowShouldClose())
     {
         DesenhaCena();
+
+
+        /*BeginDrawing();
+
+        EndDrawing();*/
+
 
     }
 
