@@ -356,19 +356,42 @@ void desenhBarraVida(Personagem *personagem, int posX, int posY, int textureHeig
         DrawTexturePro(coracaoVida, source, destino, (Vector2){0}, 0, WHITE);
 }
 
+Personagem* sorteiaPersonagemMaquina()
+{
+
+    srand(time(NULL));
+
+    int numeroAleatorio = rand() % QTDE_TOTAL_CARTAS;
+
+    return &personagens[numeroAleatorio];
+}
+
+void TextureFlipHorizontal(Texture2D *texture)
+{
+    Image flipedImage = LoadImageFromTexture(*texture);
+
+    ImageFlipHorizontal(&flipedImage);
+
+    *texture = LoadTextureFromImage(flipedImage);
+}
+
 void jogo(ListaCartas *cartasEscolhidas)
 {
 
     SpriteAnimation animation;
     Texture2D textureSprite = {0};
-    int estadoPersonagem = 0; //0 = Idle; 1 - Run; 2 - Shot
+    Texture2D spriteMaquina = {0};
+    int estadoPersonagemPlayer = 0; //0 = Idle; 1 - Run; 2 - Shot
+    int estadoPersonagemMaquina = 0; //0 = Idle; 1 - Run; 2 - Shot
     Personagem *inScenePersonagem = NULL;
+    Personagem *sorteado = NULL;
 
     Timer timeAnimation;
     timeAnimation.startTime = 0;
     timeAnimation.lifeTime = 0;
 
-    Rectangle movementRec = (Rectangle){50, GetScreenHeight() / 2, 213, 136};
+    Rectangle movementRecPlayer = (Rectangle){50, GetScreenHeight() / 2, 213, 136};
+    Rectangle movementRecMaquina = (Rectangle){GetScreenWidth() * 0.80, GetScreenHeight() / 2, 213, 136};
 
     Carta *cartaEmMovimento = NULL;
     reposicionarListaEscolhidos(cartasEscolhidas, (GetScreenWidth() / 2) * 0.15 , GetScreenHeight() - (LARGURA_CARTA * 2));
@@ -400,6 +423,7 @@ void jogo(ListaCartas *cartasEscolhidas)
                     cartaEmMovimento->posX = cartaEmMovimento->posXOrigem;
                     cartaEmMovimento->posY = cartaEmMovimento->posYOrigem;
                     inScenePersonagem = cartaEmMovimento->personagem;
+                    sorteado = sorteiaPersonagemMaquina();
 
                     if (inScenePersonagem != NULL)
                     {
@@ -408,8 +432,13 @@ void jogo(ListaCartas *cartasEscolhidas)
                             UnloadTexture(textureSprite);
                         }
                         textureSprite = LoadTexture(inScenePersonagem->caminhoSprites[0]);
-                        estadoPersonagem = 0;
-                        movementRec.x = 50;
+                        spriteMaquina = LoadTexture(sorteado->caminhoSprites[0]);
+
+                        TextureFlipHorizontal(&spriteMaquina);
+
+                        estadoPersonagemPlayer = 0;
+                        movementRecPlayer.x = 50;
+                        movementRecMaquina.x = GetScreenWidth() * 0.80;
                     }
                 }
                 cartaEmMovimento = NULL;
@@ -427,7 +456,7 @@ void jogo(ListaCartas *cartasEscolhidas)
             {
                 if (IsTextureReady(textureSprite))
                 {
-                    desenhBarraVida(inScenePersonagem, movementRec.x, movementRec.y, textureSprite.height);
+                    desenhBarraVida(inScenePersonagem, movementRecPlayer.x, movementRecPlayer.y, textureSprite.height);
                     int width = textureSprite.width / 4;
                     int height = textureSprite.height;
 
@@ -437,29 +466,78 @@ void jogo(ListaCartas *cartasEscolhidas)
                                                     (Rectangle){width * 2, 0, width, height},
                                                     (Rectangle){width * 3, 0, width, height}
                                                 }, 4);
-                    movementRec.width = width;
-                    movementRec.height = height;
-                    if (estadoPersonagem == 1)
-                        movementRec.x += 3;
-                    DrawSpriteAnimationPro(animation, movementRec, (Vector2){0, 0}, 0.0, WHITE);
+                    movementRecPlayer.width = width;
+                    movementRecPlayer.height = height;
+                    if (estadoPersonagemPlayer == 1)
+                        movementRecPlayer.x += 3;
+                    DrawSpriteAnimationPro(animation, movementRecPlayer, (Vector2){0, 0}, 0.0, WHITE);
+
+                    if (sorteado != NULL)
+                    {
+                        if (IsTextureReady(spriteMaquina))
+                        {
+                            desenhBarraVida(sorteado, movementRecMaquina.x, movementRecMaquina.y, spriteMaquina.height);
+                            int width = spriteMaquina.width / 4;
+                            int height = spriteMaquina.height;
+
+                            animation = CreateSpriteAnimation(spriteMaquina, 4, (Rectangle[]){
+                                                            (Rectangle){width * 0, 0, width, height},
+                                                            (Rectangle){width * 1, 0, width, height},
+                                                            (Rectangle){width * 2, 0, width, height},
+                                                            (Rectangle){width * 3, 0, width, height}
+                                                        }, 4);
+                            movementRecMaquina.width = width;
+                            movementRecMaquina.height = height;
+
+
+
+                            if (estadoPersonagemMaquina == 1)
+                                movementRecMaquina.x -= 3;
+                            DrawSpriteAnimationPro(animation, movementRecMaquina, (Vector2){0.0f, 0.0f}, 0.0f, WHITE);
+
+                        }
+                        else
+                            TraceLog(LOG_ERROR, "Sprite personagem sorteado nao carregado");
+                    }
+
 
                     if(timeAnimation.lifeTime == 0)
-                        StartTimer(&timeAnimation, 2.5);
+                        StartTimer(&timeAnimation, 3);
 
                     if (TimerDone(timeAnimation))
                     {
-                        if (estadoPersonagem == 0)
+                        //**** ANIMACAO SPRITE PERSONAGEM JOGADOR
+                        if (estadoPersonagemPlayer == 0)
                         {
                             UnloadTexture(textureSprite);
                             textureSprite = LoadTexture(inScenePersonagem->caminhoSprites[1]);
-                            estadoPersonagem = 1;
+                            estadoPersonagemPlayer = 1;
 
                             StartTimer(&timeAnimation, 2.5);
                         }
-                        else if (estadoPersonagem == 1)
+                        else if (estadoPersonagemPlayer == 1)
                         {
                             textureSprite = LoadTexture(inScenePersonagem->caminhoSprites[2]);
-                            estadoPersonagem = 2;
+                            estadoPersonagemPlayer = 2;
+                        }
+                        //**** ANIMACAO SPRITE PERSONAGEM MAQUINA *****
+                        if (estadoPersonagemMaquina == 0)
+                        {
+                            UnloadTexture(spriteMaquina);
+                            spriteMaquina = LoadTexture(sorteado->caminhoSprites[1]);
+
+                            TextureFlipHorizontal(&spriteMaquina);
+
+                            estadoPersonagemMaquina = 1;
+
+                            StartTimer(&timeAnimation, 2.5);
+                        }
+                        else if (estadoPersonagemMaquina == 1)
+                        {
+                            spriteMaquina = LoadTexture(sorteado->caminhoSprites[2]);
+                            TextureFlipHorizontal(&spriteMaquina);
+
+                            estadoPersonagemMaquina = 2;
                         }
                     }
                 }
@@ -903,6 +981,7 @@ int main()
     carregarTexturas(imagensPersonagens, QTDE_TOTAL_CARTAS);
     criaCartasDisponiveis(cartasDisponiveis, personagens, QTDE_TOTAL_CARTAS);
     criaPersonagens(personagens, imagensPersonagens, QTDE_TOTAL_CARTAS);
+
 
     while (!WindowShouldClose())
     {
