@@ -366,23 +366,22 @@ Carta* cartaEscolhidasPorPosicao(ListaCartas *cartasEscolhidas, int posX, int po
 
 //************ GAME SCENE ***************
 
-void desenhBarraVida(Personagem *personagem, int posX, int posY, int tamanhoBarra)
+void desenhBarraVida(Personagem *personagem, int posX, int posY, int vidaMaxima)
 {
     if (personagem == NULL)
         return;
 
     int vida = personagem->vida;
 
-    Rectangle source = (Rectangle){0, 0, 662, 377};
-    Rectangle destino = (Rectangle){posX + 20, posY - 15, 32, 18};
     Texture2D coracaoVida = LoadTexture("img/coracaoVida.png");
+    Rectangle source = (Rectangle){0, 0, coracaoVida.width, coracaoVida.height};
+    Rectangle destino = (Rectangle){posX + 20, posY - 15, 32, 18};
 
-    if (vida < VIDA_MAXIMA)
-        tamanhoBarra = (tamanhoBarra * vida) / VIDA_MAXIMA;
+    Rectangle barraVidaMaxima = (Rectangle){posX + vidaMaxima / 2, posY - 10, vidaMaxima, 10};
+    Rectangle barraVida = (Rectangle){posX + vidaMaxima / 2, posY - 10, vida, 10};
 
-    Rectangle barraVida = (Rectangle){posX + tamanhoBarra / 2, posY - 10, tamanhoBarra, 10};
     DrawRectangleRec(barraVida, RED);
-    DrawRectangleLinesEx(barraVida, 2, BLACK);
+    DrawRectangleLinesEx(barraVidaMaxima, 2, BLACK);
 
     if (IsTextureReady(coracaoVida))
         DrawTexturePro(coracaoVida, source, destino, (Vector2){0}, 0, WHITE);
@@ -417,8 +416,11 @@ void jogo(ListaCartas *cartasEscolhidas)
     int estadoPersonagemMaquina = 0; //0 = Idle; 1 - Run; 2 - Shot
     int vidaMaximaPersonagemPlayer = 0;
     int vidaMaximaPersonagemMaquina = 0;
-    Personagem *inScenePersonagem = NULL;
-    Personagem *sorteado = NULL;
+    int ataquePlayer = 0;
+    int ataqueMaquina = 0;
+
+    Personagem *personagemPlayer = NULL;
+    Personagem *personagemMaquina = NULL;
 
     Timer timeAnimation;
     timeAnimation.startTime = 0;
@@ -456,23 +458,32 @@ void jogo(ListaCartas *cartasEscolhidas)
                 {
                     cartaEmMovimento->posX = cartaEmMovimento->posXOrigem;
                     cartaEmMovimento->posY = cartaEmMovimento->posYOrigem;
-                    inScenePersonagem = cartaEmMovimento->personagem;
-                    sorteado = sorteiaPersonagemMaquina();
+                    personagemPlayer = cartaEmMovimento->personagem;
+                    personagemMaquina = sorteiaPersonagemMaquina();
 
-                    if (inScenePersonagem != NULL)
+                    if (personagemPlayer != NULL)
                     {
                         if (IsTextureReady(textureSprite))
                         {
                             UnloadTexture(textureSprite);
                         }
-                        textureSprite = LoadTexture(inScenePersonagem->caminhoSprites[0]);
-                        spriteMaquina = LoadTexture(sorteado->caminhoSprites[0]);
+                        textureSprite = LoadTexture(personagemPlayer->caminhoSprites[0]);
+
+                        if (IsTextureReady(spriteMaquina))
+                        {
+                            UnloadTexture(spriteMaquina);
+                        }
+
+                        spriteMaquina = LoadTexture(personagemMaquina->caminhoSprites[0]);
 
                         TextureFlipHorizontal(&spriteMaquina);
 
                         estadoPersonagemPlayer = 0;
-                        vidaMaximaPersonagemPlayer = inScenePersonagem->vida;
-                        vidaMaximaPersonagemMaquina = sorteado->vida;
+                        estadoPersonagemMaquina = 0;
+                        vidaMaximaPersonagemPlayer = personagemPlayer->vida;
+                        vidaMaximaPersonagemMaquina = personagemMaquina->vida;
+                        ataquePlayer = personagemPlayer->forcaAtaque;
+                        ataqueMaquina = personagemMaquina->forcaAtaque;
 
                         movementRecPlayer.x = 50;
                         movementRecMaquina.x = GetScreenWidth() * 0.80;
@@ -490,12 +501,12 @@ void jogo(ListaCartas *cartasEscolhidas)
             }
 
 
-            if (inScenePersonagem != NULL)
+            if (personagemPlayer != NULL)
             {
                 if (IsTextureReady(textureSprite))
                 {
-                    desenhBarraVida(inScenePersonagem, movementRecPlayer.x, movementRecPlayer.y, vidaMaximaPersonagemPlayer);
-                    printf("vida maxima player %d", vidaMaximaPersonagemPlayer);
+                    desenhBarraVida(personagemPlayer, movementRecPlayer.x, movementRecPlayer.y, vidaMaximaPersonagemPlayer);
+                    printf("vida maxima player %d\n", vidaMaximaPersonagemPlayer);
 
                     int width = textureSprite.width / 4;
                     int height = textureSprite.height;
@@ -512,12 +523,12 @@ void jogo(ListaCartas *cartasEscolhidas)
                         movementRecPlayer.x += 3;
                     DrawSpriteAnimationPro(animation, movementRecPlayer, (Vector2){0, 0}, 0.0, WHITE);
 
-                    if (sorteado != NULL)
+                    if (personagemMaquina != NULL)
                     {
                         if (IsTextureReady(spriteMaquina))
                         {
-                            desenhBarraVida(sorteado, movementRecMaquina.x, movementRecMaquina.y, vidaMaximaPersonagemMaquina);
-                            printf("vida maxima player %d", vidaMaximaPersonagemMaquina);
+                            desenhBarraVida(personagemMaquina, movementRecMaquina.x, movementRecMaquina.y, vidaMaximaPersonagemMaquina);
+                            printf("vida maxima player %d\n", vidaMaximaPersonagemMaquina);
                             int width = spriteMaquina.width / 4;
                             int height = spriteMaquina.height;
 
@@ -551,21 +562,21 @@ void jogo(ListaCartas *cartasEscolhidas)
                         if (estadoPersonagemPlayer == 0)
                         {
                             UnloadTexture(textureSprite);
-                            textureSprite = LoadTexture(inScenePersonagem->caminhoSprites[1]);
+                            textureSprite = LoadTexture(personagemPlayer->caminhoSprites[1]);
                             estadoPersonagemPlayer = 1;
 
                             StartTimer(&timeAnimation, 2.5);
                         }
                         else if (estadoPersonagemPlayer == 1)
                         {
-                            textureSprite = LoadTexture(inScenePersonagem->caminhoSprites[2]);
+                            textureSprite = LoadTexture(personagemPlayer->caminhoSprites[2]);
                             estadoPersonagemPlayer = 2;
                         }
                         //**** ANIMACAO SPRITE PERSONAGEM MAQUINA *****
                         if (estadoPersonagemMaquina == 0)
                         {
                             UnloadTexture(spriteMaquina);
-                            spriteMaquina = LoadTexture(sorteado->caminhoSprites[1]);
+                            spriteMaquina = LoadTexture(personagemMaquina->caminhoSprites[1]);
 
                             TextureFlipHorizontal(&spriteMaquina);
 
@@ -575,12 +586,31 @@ void jogo(ListaCartas *cartasEscolhidas)
                         }
                         else if (estadoPersonagemMaquina == 1)
                         {
-                            spriteMaquina = LoadTexture(sorteado->caminhoSprites[2]);
+                            spriteMaquina = LoadTexture(personagemMaquina->caminhoSprites[2]);
                             TextureFlipHorizontal(&spriteMaquina);
 
                             estadoPersonagemMaquina = 2;
                         }
                     }
+
+                    if (estadoPersonagemPlayer == 2)
+                    {
+                        if (ataqueMaquina > 0)
+                        {
+                            personagemPlayer->vida -= ataqueMaquina > personagemPlayer->vida ? personagemPlayer->vida : ataqueMaquina;
+                            ataqueMaquina = 0;
+                        }
+                    }
+
+                    if (estadoPersonagemMaquina == 2)
+                    {
+                        if (ataquePlayer > 0)
+                        {
+                            personagemMaquina->vida -= ataquePlayer > personagemMaquina->vida ? personagemMaquina->vida : ataquePlayer;
+                            ataquePlayer = 0;
+                        }
+                    }
+
                 }
                 else
                 {
