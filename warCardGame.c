@@ -354,7 +354,10 @@ Carta* cartaEscolhidasPorPosicao(ListaCartas *cartasEscolhidas, int posX, int po
 
         if(CheckCollisionPointRec(ponto, areaCarta))
         {
-            return aux;
+            if (aux->emJogo)
+                return NULL;
+            else
+                return aux;
         }
 
         aux = aux->proxima;
@@ -377,8 +380,8 @@ void desenhBarraVida(Personagem *personagem, int posX, int posY, int vidaMaxima)
     Rectangle source = (Rectangle){0, 0, coracaoVida.width, coracaoVida.height};
     Rectangle destino = (Rectangle){posX + 20, posY - 15, 32, 18};
 
-    Rectangle barraVidaMaxima = (Rectangle){posX + vidaMaxima / 2, posY - 10, vidaMaxima, 10};
-    Rectangle barraVida = (Rectangle){posX + vidaMaxima / 2, posY - 10, vida, 10};
+    Rectangle barraVidaMaxima = (Rectangle){posX + 50, posY - 10, vidaMaxima, 10};
+    Rectangle barraVida = (Rectangle){posX + 50, posY - 10, vida, 10};
 
     DrawRectangleRec(barraVida, RED);
     DrawRectangleLinesEx(barraVidaMaxima, 2, BLACK);
@@ -488,6 +491,8 @@ void jogo(ListaCartas *cartasEscolhidas)
                         movementRecPlayer.x = 50;
                         movementRecMaquina.x = GetScreenWidth() * 0.80;
                     }
+
+                    cartaEmMovimento->emJogo = true;
                 }
                 cartaEmMovimento = NULL;
             }
