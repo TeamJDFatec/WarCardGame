@@ -13,7 +13,7 @@
 #define LARGURA_CARTA 150
 #define ALTURA_CARTA 200
 
-#define NUM_ANIMACOES 3
+#define NUM_ANIMACOES 4
 
 #define VIDA_MAXIMA 100
 
@@ -65,17 +65,29 @@ typedef enum {
 
 Scene currentScene;
 
+typedef enum
+{
+    SOLDADO,
+    CACADOR,
+    SELVA,
+    TANQUE
+} TipoPersonagem_Enum;
+
+typedef struct
+{
+    TipoPersonagem_Enum tipoPersonagem;
+    int forcaAtaque;
+    int vida;
+} TipoPersonagem;
+
 typedef struct
 {
     Texture2D imgPersonagem;
     int id;
+    TipoPersonagem tipo;
     char* nome;
-    int forcaAtaque;
-    int vida;
-    char* caminhoSprites[3];
+    char* caminhoSprites[NUM_ANIMACOES];
     int qtdeFrames;
-    int posX;
-    int posY;
 } Personagem;
 
 typedef struct carta
@@ -271,28 +283,40 @@ void desenhaFundo()
 
 void desenhaCarta(Carta carta)
 {
-    Rectangle molde = {0};
+    Rectangle moldeCarta = {0};
+
     Rectangle moldeImgPersonagem = {0};
     Texture2D imgPersonagem = {0};
+
+    Texture2D imgPontosVida = {0};
+
     Color cartaCor = carta.emJogo ? DARKGRAY : GRAY;
     Color personagemCor = carta.emJogo ? BLACK : WHITE;
 
-    molde.x = carta.posX;
-    molde.y = carta.posY;
-    molde.height = carta.height;
-    molde.width = carta.width;
+    char pontosVida[5];
+
+    moldeCarta.x = carta.posX;
+    moldeCarta.y = carta.posY;
+    moldeCarta.height = carta.height;
+    moldeCarta.width = carta.width;
 
     if (carta.personagem != NULL)
     {
 
-        DrawRectangleRec(molde, cartaCor);
-        DrawRectangleLinesEx(molde, 10, BROWN);
+        DrawRectangleRec(moldeCarta, cartaCor);
+        DrawRectangleLinesEx(moldeCarta, 10, BROWN);
 
         imgPersonagem = carta.personagem->imgPersonagem;
 
         if (IsTextureReady(imgPersonagem))
         {
-            moldeImgPersonagem = (Rectangle){molde.x + 20, molde.y + 25, imgPersonagem.width / 4, imgPersonagem.height};
+
+            moldeImgPersonagem = (Rectangle){
+                moldeCarta.x + 20,
+                moldeCarta.y + 25,
+                imgPersonagem.width / 4,
+                imgPersonagem.height
+                };
 
             DrawTexturePro(imgPersonagem,
                            (Rectangle){0, 0, (imgPersonagem.width / 4), imgPersonagem.height},
@@ -303,13 +327,37 @@ void desenhaCarta(Carta carta)
         }
         else
         {
-            TraceLog(LOG_ERROR, "Imagem do personagem nao carregada");
+           TraceLog(LOG_ERROR, "Imagem do personagem nao carregada");
         }
+
+        imgPontosVida = LoadTexture("img/shield.png");
+
+        if (IsTextureReady(imgPontosVida))
+        {
+
+            Rectangle moldePontosVida = (Rectangle){moldeCarta.x + 5, (moldeCarta.y + moldeCarta.height) - 60, 55, 46};
+
+            DrawTexturePro(imgPontosVida,
+                           (Rectangle){0, 0, imgPontosVida.width, imgPontosVida.height, WHITE},
+                           moldePontosVida,
+                           (Vector2){0},
+                           0,
+                           WHITE);
+
+            sprintf(pontosVida, "%d", carta.personagem->tipo.vida);
+            DrawText(pontosVida, moldePontosVida.x + 50, moldePontosVida.y + 10, 20, BLACK);
+
+        }
+        else
+        {
+            TraceLog(LOG_ERROR, "Imagem do coracao nao carregada");
+        }
+
 
     }
     else
     {
-        DrawRectangleLinesEx(molde, 5, BROWN);
+        DrawRectangleLinesEx(moldeCarta, 5, BROWN);
     }
 
 }
@@ -374,7 +422,7 @@ void desenhBarraVida(Personagem *personagem, int posX, int posY, int vidaMaxima)
     if (personagem == NULL)
         return;
 
-    int vida = personagem->vida;
+    int vida = personagem->tipo.vida;
 
     Texture2D coracaoVida = LoadTexture("img/coracaoVida.png");
     Rectangle source = (Rectangle){0, 0, coracaoVida.width, coracaoVida.height};
@@ -422,12 +470,20 @@ void jogo(ListaCartas *cartasEscolhidas)
     int ataquePlayer = 0;
     int ataqueMaquina = 0;
 
+    int indexAnimation = 0;
+    bool playerIsDead = false;
+
+
     Personagem *personagemPlayer = NULL;
     Personagem *personagemMaquina = NULL;
 
     Timer timeAnimation;
     timeAnimation.startTime = 0;
     timeAnimation.lifeTime = 0;
+
+    Timer timerVida;
+    timerVida.startTime = 0;
+    timerVida.lifeTime = 0;
 
     Rectangle movementRecPlayer = (Rectangle){50, GetScreenHeight() / 2, 213, 136};
     Rectangle movementRecMaquina = (Rectangle){GetScreenWidth() * 0.80, GetScreenHeight() / 2, 213, 136};
@@ -483,10 +539,10 @@ void jogo(ListaCartas *cartasEscolhidas)
 
                         estadoPersonagemPlayer = 0;
                         estadoPersonagemMaquina = 0;
-                        vidaMaximaPersonagemPlayer = personagemPlayer->vida;
-                        vidaMaximaPersonagemMaquina = personagemMaquina->vida;
-                        ataquePlayer = personagemPlayer->forcaAtaque;
-                        ataqueMaquina = personagemMaquina->forcaAtaque;
+                        vidaMaximaPersonagemPlayer = personagemPlayer->tipo.vida;
+                        vidaMaximaPersonagemMaquina = personagemMaquina->tipo.vida;
+                        ataquePlayer = personagemPlayer->tipo.forcaAtaque;
+                        ataqueMaquina = personagemMaquina->tipo.forcaAtaque;
 
                         movementRecPlayer.x = 50;
                         movementRecMaquina.x = GetScreenWidth() * 0.80;
@@ -511,7 +567,6 @@ void jogo(ListaCartas *cartasEscolhidas)
                 if (IsTextureReady(textureSprite))
                 {
                     desenhBarraVida(personagemPlayer, movementRecPlayer.x, movementRecPlayer.y, vidaMaximaPersonagemPlayer);
-                    printf("vida maxima player %d\n", vidaMaximaPersonagemPlayer);
 
                     int width = textureSprite.width / 4;
                     int height = textureSprite.height;
@@ -526,14 +581,32 @@ void jogo(ListaCartas *cartasEscolhidas)
                     movementRecPlayer.height = height;
                     if (estadoPersonagemPlayer == 1)
                         movementRecPlayer.x += 3;
-                    DrawSpriteAnimationPro(animation, movementRecPlayer, (Vector2){0, 0}, 0.0, WHITE);
+
+
+
+                    if (indexAnimation == animation.rectanglesLength - 1 && playerIsDead)
+                    {
+
+                        DrawTexturePro(textureSprite,
+                                       animation.rectangles[3],
+                                        movementRecPlayer,
+                                        (Vector2){0},
+                                       0,
+                                       WHITE);
+
+                    }
+                    else
+                    {
+                        indexAnimation = (int)(GetTime() * animation.framesPerSecond) % animation.rectanglesLength;
+                        DrawSpriteAnimationPro(animation, movementRecPlayer, (Vector2){0, 0}, 0.0, WHITE);
+                    }
+
 
                     if (personagemMaquina != NULL)
                     {
                         if (IsTextureReady(spriteMaquina))
                         {
                             desenhBarraVida(personagemMaquina, movementRecMaquina.x, movementRecMaquina.y, vidaMaximaPersonagemMaquina);
-                            printf("vida maxima player %d\n", vidaMaximaPersonagemMaquina);
                             int width = spriteMaquina.width / 4;
                             int height = spriteMaquina.height;
 
@@ -577,6 +650,13 @@ void jogo(ListaCartas *cartasEscolhidas)
                             textureSprite = LoadTexture(personagemPlayer->caminhoSprites[2]);
                             estadoPersonagemPlayer = 2;
                         }
+                        else if (estadoPersonagemPlayer == 3)
+                        {
+                            UnloadTexture(textureSprite);
+                            textureSprite = LoadTexture(personagemPlayer->caminhoSprites[3]);
+                        }
+
+
                         //**** ANIMACAO SPRITE PERSONAGEM MAQUINA *****
                         if (estadoPersonagemMaquina == 0)
                         {
@@ -598,24 +678,40 @@ void jogo(ListaCartas *cartasEscolhidas)
                         }
                     }
 
-                    if (estadoPersonagemPlayer == 2)
+
+                    if (personagemPlayer->tipo.vida <= 0 && personagemMaquina->tipo.vida > 0)
                     {
-                        if (ataqueMaquina > 0)
-                        {
-                            personagemPlayer->vida -= ataqueMaquina > personagemPlayer->vida ? personagemPlayer->vida : ataqueMaquina;
-                            ataqueMaquina = 0;
-                        }
+                        DrawText("YOU DIED", GetScreenWidth() / 2 * 0.60, GetScreenHeight() / 2 * 0.60, 150, RED);
+                        playerIsDead = true;
+                        estadoPersonagemPlayer = 3;
                     }
 
-                    if (estadoPersonagemMaquina == 2)
-                    {
-                        if (ataquePlayer > 0)
-                        {
-                            personagemMaquina->vida -= ataquePlayer > personagemMaquina->vida ? personagemMaquina->vida : ataquePlayer;
-                            ataquePlayer = 0;
-                        }
-                    }
 
+                    if (TimerDone(timerVida))
+                    {
+                        if (estadoPersonagemPlayer == 2)
+                        {
+                            if (personagemMaquina->tipo.vida > 0)
+                            {
+                                personagemPlayer->tipo.vida -= personagemPlayer->tipo.vida > 0 ? ataqueMaquina : 0;
+
+                                if (personagemPlayer->tipo.vida < 0)
+                                    personagemPlayer->tipo.vida = 0;
+                            }
+                        }
+
+                        if (estadoPersonagemMaquina == 2)
+                        {
+                            if (personagemPlayer->tipo.vida > 0)
+                            {
+                                personagemMaquina->tipo.vida -= personagemMaquina->tipo.vida > 0 ? ataquePlayer : 0;
+                                //ataquePlayer--;
+                            }
+                        }
+
+                        if (personagemPlayer->tipo.vida > 0 || personagemMaquina->tipo.vida)
+                            StartTimer(&timerVida, 1);
+                    }
                 }
                 else
                 {
@@ -652,6 +748,9 @@ void preencheCaminhoSpritesPersonagem(int idPersonagem, char* caminhoSprites[], 
         case 2:
             strcpy(strAnimacao, "Shot.png");
             break;
+        case 3:
+            strcpy(strAnimacao, "Dead.png");
+            break;
         }
 
         sprintf(strId, "%d", idPersonagem);
@@ -673,13 +772,21 @@ void criaPersonagens(Personagem personagens[], Texture2D imagensPersonagens[], i
     Personagem personagem;
     int qtdeFrames = 4;
 
+    TipoPersonagem tipo[4] = {
+        (TipoPersonagem){SOLDADO, 10, 50},
+        (TipoPersonagem){CACADOR, 25, 60},
+        (TipoPersonagem){SELVA, 33, 80},
+        (TipoPersonagem){TANQUE, 50, 100}
+        };
+    int indexTipo = 0;
+
     for (int i = 0; i < qtde; i++)
     {
+        indexTipo = i % 4;
+
         personagem.id = i;
-        personagem.nome = "teste";
+        personagem.tipo = tipo[indexTipo];
         personagem.imgPersonagem = imagensPersonagens[i];
-        personagem.forcaAtaque = sorteiaNumero(10, 60);
-        personagem.vida = sorteiaNumero(100, 200);
 
         char* caminhoSprites[NUM_ANIMACOES];
         preencheCaminhoSpritesPersonagem(personagem.id, caminhoSprites, NUM_ANIMACOES);
