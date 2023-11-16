@@ -36,14 +36,14 @@
 	<string.h>
 	"animation.h"
 
-1699440776 source:c:\users\victo\onedrive\documentos\raylib\warcardgame\animation.c
+1700150358 source:c:\users\victo\onedrive\documentos\raylib\warcardgame\animation.c
 	"animation.h"
 	<stdlib.h>
 
-1699283403 c:\users\victo\onedrive\documentos\raylib\warcardgame\animation.h
+1700150358 c:\users\victo\onedrive\documentos\raylib\warcardgame\animation.h
 	<raylib.h>
 
-1699633601 source:c:\users\victo\onedrive\documentos\raylib\warcardgame\warcardgame.c
+1700150490 source:c:\users\victo\onedrive\documentos\raylib\warcardgame\warcardgame.c
 	"raylib.h"
 	<locale.h>
 	<stdio.h>

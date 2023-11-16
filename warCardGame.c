@@ -289,11 +289,13 @@ void desenhaCarta(Carta carta)
     Texture2D imgPersonagem = {0};
 
     Texture2D imgPontosVida = {0};
+    Texture2D imgPontosAtaque = {0};
 
     Color cartaCor = carta.emJogo ? DARKGRAY : GRAY;
     Color personagemCor = carta.emJogo ? BLACK : WHITE;
 
     char pontosVida[5];
+    char pontosAtaque[5];
 
     moldeCarta.x = carta.posX;
     moldeCarta.y = carta.posY;
@@ -335,7 +337,7 @@ void desenhaCarta(Carta carta)
         if (IsTextureReady(imgPontosVida))
         {
 
-            Rectangle moldePontosVida = (Rectangle){moldeCarta.x + 5, (moldeCarta.y + moldeCarta.height) - 60, 55, 46};
+            Rectangle moldePontosVida = (Rectangle){moldeCarta.x + 5, (moldeCarta.y + moldeCarta.height) - 60, 45, 38};
 
             DrawTexturePro(imgPontosVida,
                            (Rectangle){0, 0, imgPontosVida.width, imgPontosVida.height, WHITE},
@@ -345,14 +347,35 @@ void desenhaCarta(Carta carta)
                            WHITE);
 
             sprintf(pontosVida, "%d", carta.personagem->tipo.vida);
-            DrawText(pontosVida, moldePontosVida.x + 50, moldePontosVida.y + 10, 20, BLACK);
+            DrawText(pontosVida, moldePontosVida.x + 40, moldePontosVida.y + 10, 20, BLACK);
 
         }
         else
         {
-            TraceLog(LOG_ERROR, "Imagem do coracao nao carregada");
+            TraceLog(LOG_ERROR, "Imagem do pontos da vida nao carregada");
         }
 
+        imgPontosAtaque = LoadTexture("img/cross-sword.png");
+
+        if (IsTextureReady(imgPontosAtaque))
+        {
+
+            Rectangle moldePontosAtaque = (Rectangle){moldeCarta.x + 75, (moldeCarta.y + moldeCarta.height) - 55, 35, 32};
+
+            DrawTexturePro(imgPontosAtaque,
+                           (Rectangle){0, 0, imgPontosAtaque.width, imgPontosAtaque.height, WHITE},
+                           moldePontosAtaque,
+                           (Vector2){0},
+                           0,
+                           WHITE);
+
+            sprintf(pontosAtaque, "%d", carta.personagem->tipo.forcaAtaque);
+            DrawText(pontosAtaque, moldePontosAtaque.x + 40, moldePontosAtaque.y + 5, 20, BLACK);
+        }
+        else
+        {
+            TraceLog(LOG_ERROR, "Imagem do pontos de ataque nao carregada");
+        }
 
     }
     else
