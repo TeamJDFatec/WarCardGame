@@ -493,8 +493,10 @@ void jogo(ListaCartas *cartasEscolhidas)
     int ataquePlayer = 0;
     int ataqueMaquina = 0;
 
-    int indexAnimation = 0;
+    int indexAnimationPlayer = 0;
+    int indexAnimationMaquina = 0;
     bool playerIsDead = false;
+    bool maquinaIsDead = false;
 
 
     Personagem *personagemPlayer = NULL;
@@ -607,7 +609,7 @@ void jogo(ListaCartas *cartasEscolhidas)
 
 
 
-                    if (indexAnimation == animation.rectanglesLength - 1 && playerIsDead)
+                    if (indexAnimationPlayer == animation.rectanglesLength - 1 && playerIsDead)
                     {
 
                         DrawTexturePro(textureSprite,
@@ -620,7 +622,7 @@ void jogo(ListaCartas *cartasEscolhidas)
                     }
                     else
                     {
-                        indexAnimation = (int)(GetTime() * animation.framesPerSecond) % animation.rectanglesLength;
+                        indexAnimationPlayer = (int)(GetTime() * animation.framesPerSecond) % animation.rectanglesLength;
                         DrawSpriteAnimationPro(animation, movementRecPlayer, (Vector2){0, 0}, 0.0, WHITE);
                     }
 
@@ -646,7 +648,25 @@ void jogo(ListaCartas *cartasEscolhidas)
 
                             if (estadoPersonagemMaquina == 1)
                                 movementRecMaquina.x -= 3;
-                            DrawSpriteAnimationPro(animation, movementRecMaquina, (Vector2){0.0f, 0.0f}, 0.0f, WHITE);
+
+
+                            if (indexAnimationMaquina == animation.rectanglesLength - 1 && maquinaIsDead)
+                            {
+
+                                DrawTexturePro(spriteMaquina,
+                                               animation.rectangles[3],
+                                               movementRecMaquina,
+                                               (Vector2){0},
+                                               0,
+                                               WHITE);
+
+                            }
+                            else
+                            {
+                                indexAnimationMaquina = (int)(GetTime() * animation.framesPerSecond) % animation.rectanglesLength;
+                                DrawSpriteAnimationPro(animation, movementRecMaquina, (Vector2){0, 0}, 0.0, WHITE);
+                            }
+
 
                         }
                         else
@@ -670,6 +690,7 @@ void jogo(ListaCartas *cartasEscolhidas)
                         }
                         else if (estadoPersonagemPlayer == 1)
                         {
+                            UnloadTexture(textureSprite);
                             textureSprite = LoadTexture(personagemPlayer->caminhoSprites[2]);
                             estadoPersonagemPlayer = 2;
                         }
@@ -694,10 +715,17 @@ void jogo(ListaCartas *cartasEscolhidas)
                         }
                         else if (estadoPersonagemMaquina == 1)
                         {
+                            UnloadTexture(spriteMaquina);
                             spriteMaquina = LoadTexture(personagemMaquina->caminhoSprites[2]);
                             TextureFlipHorizontal(&spriteMaquina);
 
                             estadoPersonagemMaquina = 2;
+                        }
+                        else if (estadoPersonagemMaquina == 3)
+                        {
+                            UnloadTexture(spriteMaquina);
+                            spriteMaquina = LoadTexture(personagemMaquina->caminhoSprites[3]);
+                            TextureFlipHorizontal(&spriteMaquina);
                         }
                     }
 
@@ -709,6 +737,12 @@ void jogo(ListaCartas *cartasEscolhidas)
                         estadoPersonagemPlayer = 3;
                     }
 
+                    if (personagemMaquina->tipo.vida <= 0 && personagemPlayer->tipo.vida > 0)
+                    {
+                        DrawText("ENEMY ELIMINATED", GetScreenWidth() / 2 * 0.30, GetScreenHeight() / 2 * 0.60, 130, RED);
+                        maquinaIsDead = true;
+                        estadoPersonagemMaquina = 3;
+                    }
 
                     if (TimerDone(timerVida))
                     {
@@ -726,13 +760,13 @@ void jogo(ListaCartas *cartasEscolhidas)
                         if (estadoPersonagemMaquina == 2)
                         {
                             if (personagemPlayer->tipo.vida > 0)
-                            {
                                 personagemMaquina->tipo.vida -= personagemMaquina->tipo.vida > 0 ? ataquePlayer : 0;
-                                //ataquePlayer--;
-                            }
+
+                            if (personagemMaquina->tipo.vida < 0)
+                                personagemMaquina->tipo.vida = 0;
                         }
 
-                        if (personagemPlayer->tipo.vida > 0 || personagemMaquina->tipo.vida)
+                        if (playerIsDead || maquinaIsDead)
                             StartTimer(&timerVida, 1);
                     }
                 }
