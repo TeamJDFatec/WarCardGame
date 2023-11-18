@@ -413,6 +413,38 @@ void destroiTexturasPersonagens(Texture2D imagensPersonagens[], int qtde)
     }
 }
 
+Personagem *clonarPersonagem(Personagem *personagemOrigem)
+{
+    Personagem* personagem = malloc(sizeof(Personagem));
+
+    personagem->id = personagemOrigem->id;
+    personagem->imgPersonagem = personagemOrigem->imgPersonagem;
+
+    for (int i = 0; i < NUM_ANIMACOES; i++)
+        personagem->caminhoSprites[i] = personagemOrigem->caminhoSprites[i];
+
+    personagem->tipo = personagemOrigem->tipo;
+    personagem->qtdeFrames = personagemOrigem->qtdeFrames;
+}
+
+Carta* clonarCarta(Carta *cartaOrigem)
+{
+    Carta *carta = malloc(sizeof(Carta));
+
+    carta->id = cartaOrigem->id;
+    carta->width = cartaOrigem->width;
+    carta->height = cartaOrigem->height;
+    carta->posX = cartaOrigem->posX;
+    carta->posXOrigem = cartaOrigem->posXOrigem;
+    carta->posY = cartaOrigem->posY;
+    carta->posYOrigem = cartaOrigem->posYOrigem;
+    carta->emJogo = cartaOrigem->emJogo;
+
+    carta->personagem = clonarPersonagem(cartaOrigem->personagem);
+
+    return carta;
+}
+
 Carta* cartaEscolhidasPorPosicao(ListaCartas *cartasEscolhidas, int posX, int posY)
 {
     Carta *aux = cartasEscolhidas->cartaInicial;
@@ -461,14 +493,13 @@ void desenhBarraVida(Personagem *personagem, int posX, int posY, int vidaMaxima)
         DrawTexturePro(coracaoVida, source, destino, (Vector2){0}, 0, WHITE);
 }
 
-Personagem* sorteiaPersonagemMaquina()
+Carta* sorteiaCarta()
 {
-
     srand(time(NULL));
 
     int numeroAleatorio = rand() % QTDE_TOTAL_CARTAS;
 
-    return &personagens[numeroAleatorio];
+    return clonarCarta(&cartasDisponiveis[numeroAleatorio]);
 }
 
 void TextureFlipHorizontal(Texture2D *texture)
@@ -476,6 +507,11 @@ void TextureFlipHorizontal(Texture2D *texture)
     Image flipedImage = LoadImageFromTexture(*texture);
 
     ImageFlipHorizontal(&flipedImage);
+
+    if (IsTextureReady(*texture))
+    {
+        UnloadTexture(*texture);
+    }
 
     *texture = LoadTextureFromImage(flipedImage);
 }
@@ -498,7 +534,6 @@ void jogo(ListaCartas *cartasEscolhidas)
     bool playerIsDead = false;
     bool maquinaIsDead = false;
 
-
     Personagem *personagemPlayer = NULL;
     Personagem *personagemMaquina = NULL;
 
@@ -514,6 +549,7 @@ void jogo(ListaCartas *cartasEscolhidas)
     Rectangle movementRecMaquina = (Rectangle){GetScreenWidth() * 0.80, GetScreenHeight() / 2, 213, 136};
 
     Carta *cartaEmMovimento = NULL;
+    Carta *cartaSorteada = NULL;
     reposicionarListaEscolhidos(cartasEscolhidas, (GetScreenWidth() / 2) * 0.15 , GetScreenHeight() - (LARGURA_CARTA * 2));
 
     while(1)
@@ -542,8 +578,33 @@ void jogo(ListaCartas *cartasEscolhidas)
                 {
                     cartaEmMovimento->posX = cartaEmMovimento->posXOrigem;
                     cartaEmMovimento->posY = cartaEmMovimento->posYOrigem;
+
+                    if (personagemPlayer != NULL)
+                        personagemPlayer = NULL;
+                        //free(personagemPlayer);
+
                     personagemPlayer = cartaEmMovimento->personagem;
-                    personagemMaquina = sorteiaPersonagemMaquina();
+
+
+                    if (cartaSorteada != NULL)
+                        cartaSorteada = NULL;
+                        //free(cartaSorteada);
+
+                    cartaSorteada = sorteiaCarta();
+
+                    if (cartaSorteada != NULL)
+                    {
+                        if (personagemMaquina != NULL)
+                            personagemMaquina = NULL;
+                            //free(personagemMaquina);
+
+                        personagemMaquina = cartaSorteada->personagem;
+                        cartaSorteada->posX = GetScreenWidth() * 0.70;
+                        cartaSorteada->posY = 35;
+                        cartaSorteada->emJogo = false;
+                    }
+                    else
+                        TraceLog(LOG_ERROR, "Erro ao sortear carta");
 
                     if (personagemPlayer != NULL)
                     {
@@ -574,7 +635,12 @@ void jogo(ListaCartas *cartasEscolhidas)
                     }
 
                     cartaEmMovimento->emJogo = true;
+                    indexAnimationMaquina = 0;
+                    indexAnimationPlayer = 0;
+                    playerIsDead = false;
+                    maquinaIsDead = false;
                 }
+                //free(cartaEmMovimento);
                 cartaEmMovimento = NULL;
             }
 
@@ -585,6 +651,10 @@ void jogo(ListaCartas *cartasEscolhidas)
 
                 desenhaCarta(*cartaEmMovimento);
             }
+
+            if (cartaSorteada != NULL)
+                desenhaCarta(*cartaSorteada);
+
 
 
             if (personagemPlayer != NULL)
@@ -608,14 +678,14 @@ void jogo(ListaCartas *cartasEscolhidas)
                         movementRecPlayer.x += 3;
 
 
-
                     if (indexAnimationPlayer == animation.rectanglesLength - 1 && playerIsDead)
                     {
 
+                        printf("AQUIIII");
                         DrawTexturePro(textureSprite,
                                        animation.rectangles[3],
-                                        movementRecPlayer,
-                                        (Vector2){0},
+                                       movementRecPlayer,
+                                       (Vector2){0},
                                        0,
                                        WHITE);
 
@@ -636,10 +706,10 @@ void jogo(ListaCartas *cartasEscolhidas)
                             int height = spriteMaquina.height;
 
                             animation = CreateSpriteAnimation(spriteMaquina, 4, (Rectangle[]){
-                                                            (Rectangle){width * 0, 0, width, height},
-                                                            (Rectangle){width * 1, 0, width, height},
+                                                            (Rectangle){width * 3, 0, width, height},
                                                             (Rectangle){width * 2, 0, width, height},
-                                                            (Rectangle){width * 3, 0, width, height}
+                                                            (Rectangle){width * 1, 0, width, height},
+                                                            (Rectangle){width * 0, 0, width, height}
                                                         }, 4);
                             movementRecMaquina.width = width;
                             movementRecMaquina.height = height;
@@ -778,6 +848,9 @@ void jogo(ListaCartas *cartasEscolhidas)
 
         EndDrawing();
     }
+
+    free(cartaSorteada);
+    free(personagemMaquina);
 }
 
 
@@ -1038,7 +1111,8 @@ Carta* pegaCartaDisponivelPorPosicao(Carta cartasDisponiveis[], int posX, int po
     return NULL;
 }
 
-void devolverCartaParaDisponiveis(Carta cartasDisponiveis[], int id)
+
+void indisponibilizarCarta(Carta cartasDisponiveis[], int id)
 {
     if (id >= 0 && id < QTDE_TOTAL_CARTAS)
         cartasDisponiveis[id].emJogo = false;
@@ -1064,9 +1138,10 @@ void moverCartaDisponiveisParaEscolhidas(Carta cartasDisponiveis[], ListaCartas 
     }
 
     if (aux->id != -1)
-        devolverCartaParaDisponiveis(cartasDisponiveis, aux->id);
+        indisponibilizarCarta(cartasDisponiveis, aux->id);
 
-    aux->personagem = cartaEmMovimento->personagem;
+    aux->personagem = clonarPersonagem(cartaEmMovimento->personagem);
+
     aux->id = cartaEmMovimento->id;
 }
 
