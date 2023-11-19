@@ -42,8 +42,9 @@ typedef struct
 {
     Rectangle areaBotao;
     Color corBotao;
-    Texture2D imgBotao;
-    bool visivel;
+    char* texto;
+    Color corTexto;
+    int fontSize;
 } Button_Rec;
 
 typedef struct
@@ -53,8 +54,9 @@ typedef struct
     float raioX;
     float raioY;
     Color corBotao;
-    Texture2D imgBotao;
-    bool visivel;
+    char* texto;
+    Color corTexto;
+    int fontSize;
 } Button_Ellipse;
 
 typedef enum {
@@ -266,19 +268,38 @@ void reposicionarListaEscolhidos(ListaCartas *cartasEscolhidas, int posXInicial,
 
 void desenhaBotaoRec(Button_Rec botao)
 {
+    DrawRectangle(botao.areaBotao.x - 10,
+                  botao.areaBotao.y - 10,
+                  botao.areaBotao.width,
+                  botao.areaBotao.height,
+                  BROWN);
     DrawRectangleRec(botao.areaBotao, botao.corBotao);
+
+    if (botao.texto != NULL)
+        DrawText(botao.texto, botao.areaBotao.x + (botao.areaBotao.width / 2 * 0.60), botao.areaBotao.y + (botao.areaBotao.height / 2 * 0.60), botao.fontSize, botao.corTexto);
 }
 
 void desenhaBotaoEllipse(Button_Ellipse botao)
 {
+
+    DrawEllipse(botao.centerX - 10,
+                botao.centerY - 10,
+                botao.raioX,
+                botao.raioY,
+                DARKGRAY);
+
     DrawEllipse(botao.centerX, botao.centerY, botao.raioX, botao.raioY, botao.corBotao);
+
+    if (botao.texto != NULL)
+        DrawText(botao.texto, (botao.centerX - MeasureText(botao.texto, botao.fontSize)) + 40, botao.centerY * 0.95, botao.fontSize, botao.corTexto);
+
 }
 
 void desenhaFundo(Scene cena)
 {
 
     if (cena == SCENE_MENU)
-        ClearBackground(BROWN);
+        ClearBackground(DARKBROWN);
     else if (cena == SCENE_DECK)
         ClearBackground(GRAY);
     else if (cena == SCENE_GAME)
@@ -1191,8 +1212,10 @@ void montarDeckCartas(ListaCartas *cartasEscolhidas)
                 botao_avancar.centerY = (GetScreenHeight() / 2) * 0.65;
                 botao_avancar.raioX = 100;
                 botao_avancar.raioY = 50;
+                botao_avancar.texto = "PLAY";
+                botao_avancar.fontSize = 30;
+                botao_avancar.corTexto = WHITE;
                 desenhaBotaoEllipse(botao_avancar);
-                DrawText("JOGAR", (botao_avancar.centerX - MeasureText("JOGAR", 30)) + 50, botao_avancar.centerY * 0.96, 30, WHITE);
             }
 
             if (isMouseOverButtonEllipse(botao_avancar))
@@ -1250,30 +1273,153 @@ void montarDeckCartas(ListaCartas *cartasEscolhidas)
 
 //************ MAIN MENU *****************
 
+void MessageBox(char* message, Rectangle box, Button_Rec buttons[], int qtdeButtons)
+{
+
+    ClearBackground(DARKBROWN);
+
+    DrawRectangleLinesEx(box, 2, WHITE);
+    DrawText(message, box.x + 10, box.y + 20, 25, RED);
+
+    for (int i = 0; i < qtdeButtons; i++)
+        desenhaBotaoRec(buttons[i]);
+}
 
 void menu()
 {
 
-    Texture2D botao_comecar;
-    Texture2D botao_sair;
+    bool botaoStart_Clicado = false;
+    bool botaoExit_Clicado = false;
+    bool isPaused = false;
 
+    Button_Rec botao_start = (Button_Rec){
+        (Rectangle){GetScreenWidth() / 2 * 0.80, GetScreenHeight() / 3 * 0.90, 300, 100, WHITE},
+        GRAY,
+        "START",
+        BLACK,
+        40,
+        false};
+
+
+    Button_Rec botao_exit = (Button_Rec){
+        (Rectangle){botao_start.areaBotao.x, botao_start.areaBotao.y + botao_start.areaBotao.height + 50, 300, 100, WHITE},
+        GRAY,
+        "EXIT",
+        BLACK,
+        40,
+        false};
 
     while (1)
     {
         BeginDrawing();
             desenhaFundo(SCENE_MENU);
 
+            if (!isPaused)
+            {
+               if (isMouseOverButtonRec(botao_start))
+               {
+                   botao_start.corBotao = DARKGRAY;
+                   botao_start.corTexto = RAYWHITE;
 
+                   if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+                       botaoStart_Clicado = true;
+               }
+               else
+               {
+                   botao_start.corBotao = GRAY;
+                   botao_start.corTexto = BLACK;
+               }
+
+               if (isMouseOverButtonRec(botao_exit))
+               {
+                   botao_exit.corBotao = DARKGRAY;
+                   botao_exit.corTexto = RAYWHITE;
+
+                   if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+                   {
+                       botaoExit_Clicado = true;
+                       isPaused = true;
+                   }
+
+               }
+               else
+               {
+                   botao_exit.corBotao = GRAY;
+                   botao_exit.corTexto = BLACK;
+               }
+
+               desenhaBotaoRec(botao_start);
+               desenhaBotaoRec(botao_exit);
+
+               if (botaoStart_Clicado)
+                break;
+            }
+
+            if (isPaused && botaoExit_Clicado)
+            {
+
+                Rectangle box = (Rectangle){GetScreenWidth() / 2 * 0.80, GetScreenHeight() / 3 * 0.90, 300, 200, WHITE};
+
+                Button_Rec botao_yes = (Button_Rec){
+                    (Rectangle){box.x + 50 , box.y + (box.height * 0.60), 100, 50, WHITE},
+                    GRAY,
+                    "YES",
+                    BLACK,
+                    20,
+                    false};
+
+
+                Button_Rec botao_no = (Button_Rec){
+                    (Rectangle){botao_yes.areaBotao.x + botao_yes.areaBotao.width + 20, botao_yes.areaBotao.y, 100, 50, WHITE},
+                    GRAY,
+                    "NO",
+                    BLACK,
+                    20,
+                    false};
+
+                if (isMouseOverButtonRec(botao_yes))
+                {
+                    botao_yes.corBotao = DARKGRAY;
+                    botao_yes.corTexto = RAYWHITE;
+
+                    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+                        CloseWindow();
+
+                }
+                else
+                {
+                    botao_yes.corBotao = GRAY;
+                    botao_yes.corTexto = BLACK;
+                }
+
+                if (isMouseOverButtonRec(botao_no))
+                {
+                    botao_no.corBotao = DARKGRAY;
+                    botao_no.corTexto = RAYWHITE;
+
+                    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+                    {
+                        botaoExit_Clicado = false;
+                        isPaused = false;
+                    }
+
+                }
+                else
+                {
+                    botao_no.corBotao = GRAY;
+                    botao_no.corTexto = BLACK;
+                }
+
+
+                MessageBox("Deseja realmente sair?", box, (Button_Rec[]){botao_yes, botao_no}, 2);
+            }
 
         EndDrawing();
-
     }
 
-    currentScene = SCENE_GAME;
-
+    currentScene = SCENE_DECK;
     return;
 }
-
 
 void DesenhaCena()
 {
@@ -1299,7 +1445,7 @@ int main()
     // Initialization
     //--------------------------------------------------------------------------------------
 
-    currentScene = SCENE_DECK;
+    currentScene = SCENE_MENU;
 
     SetTraceLogLevel(LOG_ERROR);
     InitWindow(0 , 0, "War Card Game");
