@@ -60,7 +60,7 @@ typedef struct
 typedef enum {
     SCENE_MENU,
     SCENE_GAME,
-    SCENE_BLABLA //nao sei um nome ainda (cena antes do jogo para escolher as cartas)
+    SCENE_DECK //nao sei um nome ainda (cena antes do jogo para escolher as cartas)
 } Scene;
 
 Scene currentScene;
@@ -274,11 +274,17 @@ void desenhaBotaoEllipse(Button_Ellipse botao)
     DrawEllipse(botao.centerX, botao.centerY, botao.raioX, botao.raioY, botao.corBotao);
 }
 
-void desenhaFundo()
+void desenhaFundo(Scene cena)
 {
 
-    ClearBackground(WHITE);
-
+    if (cena == SCENE_MENU)
+        ClearBackground(BROWN);
+    else if (cena == SCENE_DECK)
+        ClearBackground(GRAY);
+    else if (cena == SCENE_GAME)
+        ClearBackground(WHITE);
+    else
+        ClearBackground(RED);
 }
 
 void desenhaCarta(Carta carta)
@@ -557,8 +563,7 @@ void jogo(ListaCartas *cartasEscolhidas)
 
         BeginDrawing();
 
-            //desenhaFundo();
-            ClearBackground(GRAY);
+            desenhaFundo(SCENE_GAME);
             desenhaCartasEscolhidas(cartasEscolhidas);
 
 
@@ -1163,7 +1168,7 @@ void montarDeckCartas(ListaCartas *cartasEscolhidas)
 
         BeginDrawing();
 
-            desenhaFundo();
+            desenhaFundo(SCENE_DECK);
             desenhaCartasDisponiveis(cartasDisponiveis, QTDE_TOTAL_CARTAS);
             desenhaCartasEscolhidas(cartasEscolhidas);
 
@@ -1249,10 +1254,15 @@ void montarDeckCartas(ListaCartas *cartasEscolhidas)
 void menu()
 {
 
-    while (GetKeyPressed() != KEY_SPACE)
+    Texture2D botao_comecar;
+    Texture2D botao_sair;
+
+
+    while (1)
     {
         BeginDrawing();
-            ClearBackground(DARKGREEN);
+            desenhaFundo(SCENE_MENU);
+
 
 
         EndDrawing();
@@ -1274,7 +1284,7 @@ void DesenhaCena()
     case SCENE_MENU:
         menu();
         break;
-    case SCENE_BLABLA:
+    case SCENE_DECK:
         montarDeckCartas(&cartasEscolhidas);
         break;
     case SCENE_GAME:
@@ -1289,7 +1299,7 @@ int main()
     // Initialization
     //--------------------------------------------------------------------------------------
 
-    currentScene = SCENE_BLABLA;
+    currentScene = SCENE_DECK;
 
     SetTraceLogLevel(LOG_ERROR);
     InitWindow(0 , 0, "War Card Game");
