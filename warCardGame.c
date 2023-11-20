@@ -298,12 +298,20 @@ void desenhaBotaoEllipse(Button_Ellipse botao)
 void desenhaFundo(Scene cena)
 {
 
+    Texture2D background = {0};
+
     if (cena == SCENE_MENU)
         ClearBackground(DARKBROWN);
     else if (cena == SCENE_DECK)
-        ClearBackground(GRAY);
-    else if (cena == SCENE_GAME)
         ClearBackground(WHITE);
+
+    else if (cena == SCENE_GAME)
+    {
+        ClearBackground(RAYWHITE);
+        Rectangle ground = (Rectangle){0, GetScreenHeight() / 2 + 100, GetScreenWidth(), GetScreenHeight() / 2 - 100, WHITE};
+
+        DrawRectangleRec(ground, DARKGRAY);
+    }
     else
         ClearBackground(RED);
 }
@@ -452,6 +460,8 @@ Personagem *clonarPersonagem(Personagem *personagemOrigem)
 
     personagem->tipo = personagemOrigem->tipo;
     personagem->qtdeFrames = personagemOrigem->qtdeFrames;
+
+    return personagem;
 }
 
 Carta* clonarCarta(Carta *cartaOrigem)
@@ -546,6 +556,8 @@ void TextureFlipHorizontal(Texture2D *texture)
 void jogo(ListaCartas *cartasEscolhidas)
 {
 
+    const int VELOCIDADE = 3;
+
     SpriteAnimation animation = {0};
     Texture2D textureSprite = {0};
     Texture2D spriteMaquina = {0};
@@ -607,14 +619,12 @@ void jogo(ListaCartas *cartasEscolhidas)
 
                     if (personagemPlayer != NULL)
                         personagemPlayer = NULL;
-                        //free(personagemPlayer);
 
                     personagemPlayer = cartaEmMovimento->personagem;
 
 
                     if (cartaSorteada != NULL)
                         cartaSorteada = NULL;
-                        //free(cartaSorteada);
 
                     cartaSorteada = sorteiaCarta();
 
@@ -622,7 +632,6 @@ void jogo(ListaCartas *cartasEscolhidas)
                     {
                         if (personagemMaquina != NULL)
                             personagemMaquina = NULL;
-                            //free(personagemMaquina);
 
                         personagemMaquina = cartaSorteada->personagem;
                         cartaSorteada->posX = GetScreenWidth() * 0.70;
@@ -701,7 +710,7 @@ void jogo(ListaCartas *cartasEscolhidas)
                     movementRecPlayer.width = width;
                     movementRecPlayer.height = height;
                     if (estadoPersonagemPlayer == 1)
-                        movementRecPlayer.x += 3;
+                        movementRecPlayer.x += VELOCIDADE;
 
 
                     if (indexAnimationPlayer == animation.rectanglesLength - 1 && playerIsDead)
@@ -743,7 +752,7 @@ void jogo(ListaCartas *cartasEscolhidas)
 
 
                             if (estadoPersonagemMaquina == 1)
-                                movementRecMaquina.x -= 3;
+                                movementRecMaquina.x -= VELOCIDADE;
 
 
                             if (indexAnimationMaquina == animation.rectanglesLength - 1 && maquinaIsDead)
